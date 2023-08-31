@@ -78,13 +78,16 @@ func TestMyFunction(t *testing.T) {
 	ctx := context.Background()
 	mockGCS := new(mocks.GCSOps)
 
+	// Mocking the returned values for the ParseEventData method
+	mockGCS.On("ParseEvent").Return("mybucket", "myfile", nil)
+
 	// Mocking the returned reader for the GetObjectReader method
 	mockReadCloser := &MockReadCloser{Reader: bytes.NewReader(mockData())}
 	mockGCS.On("GetObjectReader", ctx, "mybucket", "myfile").Return(mockReadCloser, nil)
 
 	uploader := FileUploader{
-		Bucket:        "mybucket",
-		Filename:      "myfile",
+		// Bucket:        "mybucket",
+		// Filename:      "myfile",
 		StorageClient: mockGCS,
 		DealClient: &mockW3sClient{
 			Files: []fs.File{},

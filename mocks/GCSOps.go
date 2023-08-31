@@ -70,6 +70,56 @@ func (_c *GCSOps_GetObjectReader_Call) Return(_a0 io.ReadCloser, _a1 error) *GCS
 	return _c
 }
 
+// ParseEvent provides a mock function with given fields:
+func (_m *GCSOps) ParseEvent() (string, string, error) {
+	ret := _m.Called()
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func() string); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	var r1 string
+	if rf, ok := ret.Get(1).(func() string); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Get(1).(string)
+	}
+
+	var r2 error
+	if rf, ok := ret.Get(2).(func() error); ok {
+		r2 = rf()
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
+}
+
+// GCSOps_ParseEvent_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ParseEvent'
+type GCSOps_ParseEvent_Call struct {
+	*mock.Call
+}
+
+// ParseEvent is a helper method to define mock.On call
+func (_e *GCSOps_Expecter) ParseEvent() *GCSOps_ParseEvent_Call {
+	return &GCSOps_ParseEvent_Call{Call: _e.mock.On("ParseEvent")}
+}
+
+func (_c *GCSOps_ParseEvent_Call) Run(run func()) *GCSOps_ParseEvent_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *GCSOps_ParseEvent_Call) Return(_a0 string, _a1 string, _a2 error) *GCSOps_ParseEvent_Call {
+	_c.Call.Return(_a0, _a1, _a2)
+	return _c
+}
+
 type mockConstructorTestingTNewGCSOps interface {
 	mock.TestingT
 	Cleanup(func())

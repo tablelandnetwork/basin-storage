@@ -19,8 +19,13 @@ type FileUploader struct {
 
 // Upload downloads a file from GCS and uploads it to web3.storage.
 func (u *FileUploader) Upload(ctx context.Context) error {
+	bucket, fname, err := u.StorageClient.ParseEvent()
+	if err != nil {
+		return err
+	}
+
 	reader, err := u.StorageClient.GetObjectReader(
-		ctx, u.Bucket, u.Filename)
+		ctx, bucket, fname)
 	if err != nil {
 		return err
 	}
@@ -31,9 +36,9 @@ func (u *FileUploader) Upload(ctx context.Context) error {
 		return err
 	}
 
-	fmt.Println("Read successful")
+	fmt.Println("Read successful", bucket, fname)
 
-	file := NewIntermediateFile(data, u.Filename)
+	file := NewIntermediateFile(data, fname)
 	cid, err := u.DealClient.Put(ctx, file)
 	if err != nil {
 		return err
@@ -46,6 +51,8 @@ func (u *FileUploader) Upload(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
+	fmt.Println("DB insert successful", relName)
 
 	return nil
 }

@@ -10,8 +10,8 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
-// GCSOps defines the interface for interacting with Google Cloud Storage (GCS).
-type GCSOps interface {
+// GCS defines the interface for interacting with Google Cloud Storage (GCS).
+type GCS interface {
 	GetObjectReader(ctx context.Context, bName, oName string) (io.ReadCloser, error)
 	ParseEvent() (string, string, error)
 }
@@ -20,6 +20,18 @@ type GCSOps interface {
 type GCSClient struct {
 	Client    *storage.Client
 	EventData []byte
+}
+
+func NewGCSClient(ctx context.Context, data []byte) (*GCSClient, error) {
+	client, err := storage.NewClient(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("storage.NewClient: %w", err)
+	}
+
+	return &GCSClient{
+		Client:    client,
+		EventData: data,
+	}, nil
 }
 
 // GetObjectReader returns a reader for the specified object in the specified bucket.

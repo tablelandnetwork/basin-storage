@@ -76,7 +76,7 @@ func (m *MockCrdb) CreateDeal(ctx context.Context, cidStr string, relationName s
 
 func TestMyFunction(t *testing.T) {
 	ctx := context.Background()
-	mockGCS := new(mocks.GCSOps)
+	mockGCS := new(mocks.GCS)
 
 	// Mocking the returned values for the ParseEventData method
 	mockGCS.On("ParseEvent").Return("mybucket", "myfile", nil)
@@ -117,5 +117,5 @@ func TestMyFunction(t *testing.T) {
 	assert.Equal(t, mockData(), buf)
 
 	// Assert that the CID was added to the database with the correct relation name
-	assert.Equal(t, "foobar", uploader.DBClient.(*MockCrdb).db[getCIDFromMockData().String()])
+	assert.Equal(t, "myfile", uploader.DBClient.(*MockCrdb).db[getCIDFromMockData().String()])
 }

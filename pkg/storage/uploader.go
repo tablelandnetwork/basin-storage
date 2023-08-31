@@ -21,19 +21,19 @@ type FileUploader struct {
 func (u *FileUploader) Upload(ctx context.Context) error {
 	bucket, fname, err := u.StorageClient.ParseEvent()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to parse event: %v", err)
 	}
 
 	reader, err := u.StorageClient.GetObjectReader(
 		ctx, bucket, fname)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get object reader: %v", err)
 	}
 	defer reader.Close()
 
 	data, err := io.ReadAll(reader)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to read object: %v", err)
 	}
 
 	fmt.Println("Read successful", bucket, fname)
@@ -41,14 +41,14 @@ func (u *FileUploader) Upload(ctx context.Context) error {
 	file := NewIntermediateFile(data, fname)
 	cid, err := u.DealClient.Put(ctx, file)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to upload file: %v", err)
 	}
 
 	fmt.Println("Upload successful :", cid)
 
 	err = u.DBClient.CreateDeal(ctx, cid.String(), fname)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create deal: %v", err)
 	}
 
 	fmt.Println("DB insert successful", fname)

@@ -15,7 +15,7 @@ import (
 
 func createDealTx(tx *sql.Tx, cidBytes []byte, relName string) error {
 	_, err := tx.Exec(
-		"Insert into deals (id, cid, relation) values(1, $1, $2)",
+		"Insert into deals (cid, relation) values($1, $2)",
 		cidBytes, relName)
 	if err != nil {
 		return errors.Wrap(err, "updating record")
@@ -35,7 +35,7 @@ type DBClient struct {
 
 func NewDB(conn string) (*DBClient, error) {
 	db, err := sql.Open("postgres", conn)
-	if err != nil {	
+	if err != nil {
 		return nil, err
 	}
 
@@ -55,8 +55,7 @@ func (db *DBClient) extractTblName(filename string) (string, error) {
 func (db *DBClient) CreateDeal(ctx context.Context, cidStr string, fileName string) error {
 	cid, err := cid.Decode(cidStr)
 	if err != nil {
-		fmt.Println(err)
-		return err
+		return fmt.Errorf("failed to decode cid: %v", err)
 	}
 
 	txopts := &sql.TxOptions{
@@ -66,16 +65,14 @@ func (db *DBClient) CreateDeal(ctx context.Context, cidStr string, fileName stri
 
 	tblName, err := db.extractTblName(fileName)
 	if err != nil {
-		fmt.Println(err)
-		return err
+		return fmt.Errorf("failed to extract table name: %v", err)
 	}
 
 	err = crdb.ExecuteTx(ctx, db.DB, txopts, func(tx *sql.Tx) error {
 		return createDealTx(tx, cid.Bytes(), tblName)
 	})
 	if err != nil {
-		fmt.Println(err)
-		return err
+		return fmt.Errorf("failed to execute transaction: %v", err)
 	}
 
 	return nil

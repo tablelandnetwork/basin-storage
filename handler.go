@@ -1,4 +1,4 @@
-package uploader
+package handler
 
 import (
 	"context"
@@ -12,8 +12,6 @@ import (
 
 	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
 	"github.com/cloudevents/sdk-go/v2/event"
-	"github.com/googleapis/google-cloudevents-go/cloud/storagedata"
-	"google.golang.org/protobuf/encoding/protojson"
 
 	bstorage "github.com/tablelandnetwork/basin-storage/pkg/storage"
 	w3s "github.com/web3-storage/go-w3s-client"
@@ -29,6 +27,8 @@ func init() {
 // The CloudEvent contains the name of the bucket and the name of the file.
 // The file is downloaded from GCS and uploaded to web3.storage.
 func Uploader(ctx context.Context, e event.Event) error {
+	// Set a timeout of 60 minutes, thats the max time a function can run on GCP (gen2)
+	// we want to ensure larger files can be uploaded
 	cctx, cancel := context.WithTimeout(context.Background(), 60*time.Minute)
 	defer cancel()
 
@@ -42,10 +42,6 @@ func Uploader(ctx context.Context, e event.Event) error {
 	storageClient, err := storage.NewClient(cctx)
 	if err != nil {
 		return fmt.Errorf("failed to initialize storage client: %v", err)
-	}
-	var data storagedata.StorageObjectData
-	if err := protojson.Unmarshal(e.Data(), &data); err != nil {
-		return fmt.Errorf("protojson.Unmarshal: %w", err)
 	}
 
 	// Initialize web3.storage client to upload file
@@ -66,9 +62,7 @@ func Uploader(ctx context.Context, e event.Event) error {
 	db := bstorage.NewDB(crdbConnStr)
 
 	u := &bstorage.FileUploader{
-		Bucket:        data.GetBucket(),
-		Filename:      data.GetName(),
-		StorageClient: &bstorage.GCSClient{Client: storageClient},
+		StorageClient: &bstorage.GCSClient{Client: storageClient, EventData: e.Data()},
 		DealClient:    w3sClient,
 		DBClient:      db,
 	}

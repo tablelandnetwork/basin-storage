@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/ipfs/go-cid"
 	_ "github.com/lib/pq"
@@ -23,28 +24,35 @@ func createDealTx(tx *sql.Tx, cidBytes []byte, relName string) error {
 	return nil
 }
 
-type CrdbOps interface {
+type Crdb interface {
 	CreateDeal(ctx context.Context, cidStr string, relationName string) error
 }
 
 type DBClient struct {
 	// Initialize cockroachdb client to store metadata
-	db *sql.DB
+	DB *sql.DB
 }
 
-func NewDB(conn string) *DBClient {
+func NewDB(conn string) (*DBClient, error) {
 	db, err := sql.Open("postgres", conn)
-	if err != nil {
-		fmt.Println(err)
-		return nil
+	if err != nil {	
+		return nil, err
 	}
 
 	return &DBClient{
-		db: db,
-	}
+		DB: db,
+	}, nil
 }
 
-func (db *DBClient) CreateDeal(ctx context.Context, cidStr string, relationName string) error {
+func (db *DBClient) extractTblName(filename string) (string, error) {
+	parts := strings.Split(filename, "-")
+	if len(parts) < 2 {
+		return "", fmt.Errorf("invalid filename")
+	}
+	return parts[len(parts)-2], nil
+}
+
+func (db *DBClient) CreateDeal(ctx context.Context, cidStr string, fileName string) error {
 	cid, err := cid.Decode(cidStr)
 	if err != nil {
 		fmt.Println(err)
@@ -55,8 +63,15 @@ func (db *DBClient) CreateDeal(ctx context.Context, cidStr string, relationName 
 		Isolation: sql.LevelSerializable,
 		ReadOnly:  false,
 	}
-	err = crdb.ExecuteTx(ctx, db.db, txopts, func(tx *sql.Tx) error {
-		return createDealTx(tx, cid.Bytes(), relationName)
+
+	tblName, err := db.extractTblName(fileName)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	err = crdb.ExecuteTx(ctx, db.DB, txopts, func(tx *sql.Tx) error {
+		return createDealTx(tx, cid.Bytes(), tblName)
 	})
 	if err != nil {
 		fmt.Println(err)

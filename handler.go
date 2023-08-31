@@ -3,12 +3,9 @@ package handler
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"time"
-
-	"cloud.google.com/go/storage"
 
 	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
 	"github.com/cloudevents/sdk-go/v2/event"
@@ -35,11 +32,10 @@ func Uploader(ctx context.Context, e event.Event) error {
 	// Read w3s token and db conn string from environment variables
 	web3StorageToken := os.Getenv("WEB3STORAGE_TOKEN")
 	crdbConnStr := os.Getenv("CRDB_CONN_STRING")
-	// connStr := "user=root password=\"\" dbname=defaultdb host=localhost port=26257 sslmode=disable"
 
 	// Initialize GCS client to download file
 	// bucket name and file name are passed in the CloudEvent
-	storageClient, err := storage.NewClient(cctx)
+	storageClient, err := bstorage.NewGCSClient(ctx, e.Data())
 	if err != nil {
 		return fmt.Errorf("failed to initialize storage client: %v", err)
 	}
@@ -49,7 +45,7 @@ func Uploader(ctx context.Context, e event.Event) error {
 		w3s.WithToken(web3StorageToken),
 		w3s.WithHTTPClient(
 			&http.Client{
-				Timeout: 0,
+				Timeout: 0, // no timeout
 			},
 		),
 	}
@@ -59,16 +55,20 @@ func Uploader(ctx context.Context, e event.Event) error {
 	}
 
 	// Initialize cockroachdb client to store metadata
-	db := bstorage.NewDB(crdbConnStr)
+	dbClient, err := bstorage.NewDB(crdbConnStr)
+	if err != nil {
+		return fmt.Errorf("failed to initialize cockroachdb client: %v", err)
+	}
+	defer dbClient.DB.Close()
 
 	u := &bstorage.FileUploader{
-		StorageClient: &bstorage.GCSClient{Client: storageClient, EventData: e.Data()},
+		StorageClient: storageClient,
 		DealClient:    w3sClient,
-		DBClient:      db,
+		DBClient:      dbClient,
 	}
 	err = u.Upload(cctx)
 	if err != nil {
-		log.Fatalf("Upload failed: %v", err)
+		return fmt.Errorf("failed to upload file: %v", err)
 	}
 
 	return nil

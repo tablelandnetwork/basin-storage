@@ -10,22 +10,23 @@ import {CommonTypes} from "filecoin-solidity/contracts/v0.8/types/CommonTypes.so
 contract BasinStorage is AccessControl {
     bytes32 public constant PUB_ADMIN_ROLE = keccak256("PUB_ADMIN_ROLE");
 
+    // DealInfo contains metadata about a Filecoin deal
     struct DealInfo {
         uint64 id;
         string selectorPath;
     }
 
-    //
+    // Pub address by pub name
     mapping(string => address) private _pubs;
 
-    //
+    // Pubs by owner, a reverse mapping of _pubs
     mapping(address => string[]) private _ownerPubs;
 
     // deal count by pub
     mapping(string => uint256) private _pubDealCount;
 
     // Deal storage indexes by pub, indexed by epoch.
-    mapping(string pub => mapping(uint256 epoch => DealInfo[])) private _deals;
+    mapping(string pub => mapping(uint256 epoch => DealInfo[])) private _deals;    
 
     // Event to log when a deal is added or updated
     event DealAdded(
@@ -37,13 +38,15 @@ contract BasinStorage is AccessControl {
     // Event to log when a pub is created
     event PubCreated(string indexed pub, address indexed owner);
 
-    //
+    // Error messages
+
+    // PubAlreadyExists is returned when a pub already exists
     error PubAlreadyExists(string reason);
 
-    //
+    // PubDoesNotExist is returned when a pub doesn't exist
     error PubDoesNotExist(string reason);
 
-    //
+    // DealEpochAlreadyExists is returned when a deal already exists for an epoch
     error DealEpochAlreadyExists(uint256 epoch);
 
     constructor() {

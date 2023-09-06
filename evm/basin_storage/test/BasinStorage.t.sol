@@ -252,12 +252,12 @@ contract BasinStoragePaginatedDealsTest is Test, HelperContract {
         HelperContract.setUpHelper(basinStorage);
     }
 
-    function testDealsPaginated(uint16 offset, uint16 limit) public {
+    function testpaginatedDeals(uint16 offset, uint16 limit) public {
         vm.assume(offset >= 0 && offset <= 200);
 
         // get latest N deals where N > total deals for an epoch range
         string memory pub = "123456";
-        BasinStorage.DealInfo[] memory deals = basinStorage.dealsPaginated(
+        BasinStorage.DealInfo[] memory deals = basinStorage.paginatedDeals(
             pub,
             offset,
             limit
@@ -288,7 +288,7 @@ contract BasinStoragePaginatedDealsTest is Test, HelperContract {
         }
 
         pub = "654321"; // same owner different pub
-        deals = basinStorage.dealsPaginated(pub, offset, limit);
+        deals = basinStorage.paginatedDeals(pub, offset, limit);
         // all 3 deals were added @ block number 100
         if (offset < 100) {
             assertEq(deals.length, 0, "Deals count should be 0");
@@ -302,7 +302,7 @@ contract BasinStoragePaginatedDealsTest is Test, HelperContract {
         }
 
         pub = "111111"; // pub of 0x123
-        deals = basinStorage.dealsPaginated(pub, offset, limit);
+        deals = basinStorage.paginatedDeals(pub, offset, limit);
         // all 3 deals were added @ block number 150
         if (offset < 150) {
             assertEq(deals.length, 0, "Deals count should be 0");
@@ -375,12 +375,12 @@ contract BasinStorageLatestDealsTest is Test, HelperContract {
         }
     }
 
-    function testDealsPaginated(uint16 offset, uint16 limit) public {
+    function testpaginatedDeals(uint16 offset, uint16 limit) public {
         vm.assume(offset >= 0 && offset <= 200);
 
         // get latest N deals where N > total deals for an epoch range
         string memory pub = "123456";
-        BasinStorage.DealInfo[] memory deals = basinStorage.dealsPaginated(
+        BasinStorage.DealInfo[] memory deals = basinStorage.paginatedDeals(
             pub,
             offset,
             limit
@@ -411,7 +411,7 @@ contract BasinStorageLatestDealsTest is Test, HelperContract {
         }
 
         pub = "654321"; // same owner different pub
-        deals = basinStorage.dealsPaginated(pub, offset, limit);
+        deals = basinStorage.paginatedDeals(pub, offset, limit);
         // all 3 deals were added @ block number 100
         if (offset < 100) {
             assertEq(deals.length, 0, "Deals count should be 0");
@@ -425,7 +425,7 @@ contract BasinStorageLatestDealsTest is Test, HelperContract {
         }
 
         pub = "111111"; // pub of 0x123
-        deals = basinStorage.dealsPaginated(pub, offset, limit);
+        deals = basinStorage.paginatedDeals(pub, offset, limit);
         // all 3 deals were added @ block number 150
         if (offset < 150) {
             assertEq(deals.length, 0, "Deals count should be 0");

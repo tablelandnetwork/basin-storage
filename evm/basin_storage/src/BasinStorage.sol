@@ -26,7 +26,7 @@ contract BasinStorage is AccessControl {
     mapping(string => uint256) private _pubDealCount;
 
     // Deal storage indexes by pub, indexed by epoch.
-    mapping(string pub => mapping(uint256 epoch => DealInfo[])) private _deals;    
+    mapping(string pub => mapping(uint256 epoch => DealInfo[])) private _deals;
 
     // Event to log when a deal is added or updated
     event DealAdded(
@@ -110,7 +110,7 @@ contract BasinStorage is AccessControl {
     /// @param startEpoch The epoch to start from.
     /// @param numDealsToFetch The number of deals to fetch.
     /// @return deals The deals for the given pub.
-    function _getDeals(
+    function _pubDeals(
         string calldata pub,
         uint256 startEpoch,
         uint256 numDealsToFetch
@@ -141,7 +141,7 @@ contract BasinStorage is AccessControl {
         // remove the trailing elements if they are empty.
         // there can be empty array elements towards the end
         // if NumDealsToFetch is greater than the total deals
-        // available within [epoch-0]
+        // available within [epoch, 0]
         assembly {
             mstore(deals, lastDealFetchedIdx)
         }
@@ -161,7 +161,7 @@ contract BasinStorage is AccessControl {
         // set n to total deals
         n = n > totalDeals ? totalDeals : n;
 
-        return _getDeals(pub, block.number, n);
+        return _pubDeals(pub, block.number, n);
     }
 
     /// @dev Returns the `limit` number of deals
@@ -169,7 +169,7 @@ contract BasinStorage is AccessControl {
     /// @param pub The pub to get the deals for.
     /// @param offset The epoch to start from.
     /// @param limit The number of deals to fetch.
-    function dealsPaginated(
+    function paginatedDeals(
         string calldata pub,
         uint256 offset,
         uint256 limit
@@ -179,7 +179,7 @@ contract BasinStorage is AccessControl {
         // set limit to total deals
         limit = limit > totalDeals ? totalDeals : limit;
 
-        return _getDeals(pub, offset, limit);
+        return _pubDeals(pub, offset, limit);
     }
 
     // MARKET API Wrappers

@@ -114,7 +114,7 @@ contract BasinStorage is AccessControl {
         string calldata pub,
         uint256 startEpoch,
         uint256 numDealsToFetch
-    ) internal view returns (DealInfo[] memory) {
+    ) private view returns (DealInfo[] memory) {
         uint256 lastDealFetchedIdx = 0;
         DealInfo[] memory deals = new DealInfo[](numDealsToFetch);
 

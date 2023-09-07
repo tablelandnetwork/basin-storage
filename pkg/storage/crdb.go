@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/ipfs/go-cid"
 	_ "github.com/lib/pq"
@@ -13,7 +14,7 @@ import (
 	"github.com/cockroachdb/cockroach-go/crdb"
 )
 
-func createDealTx(tx *sql.Tx, cidBytes []byte, relName string) error {
+func createJobTx(tx *sql.Tx, cidBytes []byte, relName string) error {
 	_, err := tx.Exec(
 		"Insert into deals (cid, relation) values($1, $2)",
 		cidBytes, relName)
@@ -25,7 +26,9 @@ func createDealTx(tx *sql.Tx, cidBytes []byte, relName string) error {
 }
 
 type Crdb interface {
-	CreateDeal(ctx context.Context, cidStr string, relationName string) error
+	CreateJob(ctx context.Context, cidStr string, relationName string) error
+	UnfinishedJobs(ctx context.Context) ([][]byte, error)
+	UpdateJobStatus(ctx context.Context, cidStr string, activation time.Time) error
 }
 
 type DBClient struct {
@@ -52,7 +55,7 @@ func (db *DBClient) extractTblName(filename string) (string, error) {
 	return parts[len(parts)-2], nil
 }
 
-func (db *DBClient) CreateDeal(ctx context.Context, cidStr string, fileName string) error {
+func (db *DBClient) CreateJob(ctx context.Context, cidStr string, fileName string) error {
 	cid, err := cid.Decode(cidStr)
 	if err != nil {
 		return fmt.Errorf("failed to decode cid: %v", err)
@@ -69,12 +72,47 @@ func (db *DBClient) CreateDeal(ctx context.Context, cidStr string, fileName stri
 	}
 
 	err = crdb.ExecuteTx(ctx, db.DB, txopts, func(tx *sql.Tx) error {
-		return createDealTx(tx, cid.Bytes(), tblName)
+		return createJobTx(tx, cid.Bytes(), tblName)
 	})
 	if err != nil {
 		return fmt.Errorf("failed to execute transaction: %v", err)
 	}
 
 	return nil
+}
 
+func (db *DBClient) UnfinishedJobs(ctx context.Context) ([][]byte, error) {
+	rows, err := db.DB.Query("SELECT cid FROM deals WHERE activated is NULL")
+	if err != nil {
+		return nil, fmt.Errorf("failed to query deals: %v", err)
+	}
+	defer rows.Close()
+
+	var cids [][]byte
+	for rows.Next() {
+		var cid []byte
+		if err := rows.Scan(&cid); err != nil {
+			return nil, fmt.Errorf("failed to scan row: %v", err)
+		}
+		cids = append(cids, cid)
+	}
+
+	return cids, nil
+}
+
+func (db *DBClient) UpdateJobStatus(ctx context.Context, cidStr string, activation time.Time) error {
+	cid, err := cid.Decode(cidStr)
+	if err != nil {
+		return fmt.Errorf("failed to decode cid: %v", err)
+	}
+
+	_, err = db.DB.Exec(
+		"UPDATE deals SET activation = $1 WHERE cid = $2",
+		activation, cid.Bytes(),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update job status: %v", err)
+	}
+
+	return nil
 }

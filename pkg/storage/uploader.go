@@ -46,7 +46,7 @@ func (u *FileUploader) Upload(ctx context.Context) error {
 
 	fmt.Println("Upload successful :", cid)
 
-	err = u.DBClient.CreateDeal(ctx, cid.String(), fname)
+	err = u.DBClient.CreateJob(ctx, cid.String(), fname)
 	if err != nil {
 		return fmt.Errorf("failed to create deal: %v", err)
 	}

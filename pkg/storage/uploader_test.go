@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/fs"
 	"testing"
+	"time"
 
 	"crypto/sha256"
 
@@ -69,8 +70,16 @@ type MockCrdb struct {
 	db map[string]string
 }
 
-func (m *MockCrdb) CreateDeal(ctx context.Context, cidStr string, relationName string) error {
+func (m *MockCrdb) CreateJob(ctx context.Context, cidStr string, relationName string) error {
 	m.db[cidStr] = relationName
+	return nil
+}
+
+func (m *MockCrdb) UnfinishedJobs(ctx context.Context) ([][]byte, error) {
+	return nil, nil
+}
+
+func (m *MockCrdb) UpdateJobStatus(ctx context.Context, cidStr string, activation time.Time) error {
 	return nil
 }
 

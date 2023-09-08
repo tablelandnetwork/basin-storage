@@ -115,7 +115,7 @@ func (sc *StatusChecker) ProcessJobs(ctx context.Context) error {
 
 	// Todo: make this concurrent since each job is independent
 	for _, job := range unfinihedJobs {
-		fmt.Println("checking status for job:", job.NSName, job.Cid)
+		fmt.Println("checking status for job:", job.Pub, job.Cid)
 		status, err := sc.getStatus(ctx, job.Cid)
 		if err != nil {
 			return fmt.Errorf("failed to get status: %v", err)
@@ -131,7 +131,7 @@ func (sc *StatusChecker) ProcessJobs(ctx context.Context) error {
 			}
 
 			// Add deals to the BasinStorage contract
-			err := sc.contractClient.AddDeals(ctx, job.NSName, deals)
+			err := sc.contractClient.AddDeals(ctx, job.Pub, deals)
 			if err != nil {
 				return fmt.Errorf("failed to add deals to contract: %v", err)
 			}
@@ -144,7 +144,7 @@ func (sc *StatusChecker) ProcessJobs(ctx context.Context) error {
 				return fmt.Errorf("failed to update job status: %v", err)
 			}
 		} else {
-			fmt.Println("no deals found for job, skipping:", job.NSName, job.Cid)
+			fmt.Println("no deals found for job, skipping:", job.Pub, job.Cid)
 		}
 
 	}

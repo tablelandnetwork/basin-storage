@@ -30,7 +30,7 @@ func TestExtractTableName(t *testing.T) {
 	crdbClient, _ := NewDB("")
 
 	for _, tt := range tests {
-		result, err := crdbClient.extractTblName(tt.filename)
+		result, err := crdbClient.extractPubName(tt.filename)
 		if tt.shouldFail {
 			if err == nil {
 				t.Errorf("expected %s to fail, but it didn't", tt.filename)

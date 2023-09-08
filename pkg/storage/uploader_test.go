@@ -86,12 +86,16 @@ func (mrc *MockReadCloser) Close() error {
 }
 
 type mockCrdb struct {
-	db   map[string]string
 	jobs []unfinihedJobs
 }
 
 func (m *mockCrdb) CreateJob(ctx context.Context, cidStr string, pub string) error {
-	m.db[cidStr] = pub
+	cid, _ := cid.Decode(cidStr)
+	m.jobs = append(m.jobs, unfinihedJobs{
+		Pub:       pub,
+		Cid:       cid.Bytes(),
+		Activated: time.Time{},
+	})
 	return nil
 }
 
@@ -133,7 +137,7 @@ func TestUploader(t *testing.T) {
 			Files: []fs.File{},
 		},
 		DBClient: &mockCrdb{
-			db: make(map[string]string),
+			jobs: []unfinihedJobs{},
 		},
 	}
 
@@ -157,6 +161,12 @@ func TestUploader(t *testing.T) {
 	assert.Equal(t, mockData(), buf)
 
 	// Assert that the CID was added to the database with the correct pub name
-	pub := uploader.DBClient.(*mockCrdb).db[getCIDFromBytes(mockData()).String()]
-	assert.Equal(t, "myfile", pub)
+	db := uploader.DBClient.(*mockCrdb)
+	assert.Equal(t, 1, len(db.jobs))
+	assert.Equal(t, "myfile", db.jobs[0].Pub)
+
+	cid, err := cid.Parse(db.jobs[0].Cid)
+	assert.NoError(t, err)
+	assert.Equal(t, getCIDFromBytes(mockData()).String(), cid.String())
+
 }

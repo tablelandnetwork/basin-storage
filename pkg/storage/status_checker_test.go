@@ -46,15 +46,14 @@ func TestStatusChecker(t *testing.T) {
 		deals: []ethereum.BasinStorageDealInfo{},
 	}
 	db := &mockCrdb{
-		db: make(map[string]string),
 		jobs: []unfinihedJobs{
 			{
-				NSName:    "myfile",
+				Pub:       "myfile",
 				Cid:       getCIDFromBytes([]byte("data for myfile")).Bytes(),
 				Activated: time.Now().Add(-time.Hour * 2), // activated 2 hours ago
 			},
 			{
-				NSName:    "myfile2",
+				Pub:       "myfile2",
 				Cid:       getCIDFromBytes([]byte("data for myfile2")).Bytes(),
 				Activated: time.Time{},
 			},

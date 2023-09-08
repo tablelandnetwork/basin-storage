@@ -26,7 +26,7 @@ func createJobTx(tx *sql.Tx, cidBytes []byte, relName string) error {
 }
 
 type Crdb interface {
-	CreateJob(ctx context.Context, cidStr string, relationName string) error
+	CreateJob(ctx context.Context, cidStr string, fileName string) error
 	UnfinishedJobs(ctx context.Context) ([]unfinihedJobs, error)
 	UpdateJobStatus(ctx context.Context, cid []byte, activation time.Time) error
 }
@@ -47,7 +47,7 @@ func NewDB(conn string) (*DBClient, error) {
 	}, nil
 }
 
-func (db *DBClient) extractTblName(filename string) (string, error) {
+func (db *DBClient) extractPubName(filename string) (string, error) {
 	parts := strings.Split(filename, "-")
 	if len(parts) < 2 {
 		return "", fmt.Errorf("invalid filename")
@@ -55,7 +55,7 @@ func (db *DBClient) extractTblName(filename string) (string, error) {
 	return parts[len(parts)-2], nil
 }
 
-func (db *DBClient) CreateJob(ctx context.Context, cidStr string, fileName string) error {
+func (db *DBClient) CreateJob(ctx context.Context, cidStr string, fname string) error {
 	cid, err := cid.Decode(cidStr)
 	if err != nil {
 		return fmt.Errorf("failed to decode cid: %v", err)
@@ -66,13 +66,13 @@ func (db *DBClient) CreateJob(ctx context.Context, cidStr string, fileName strin
 		ReadOnly:  false,
 	}
 
-	tblName, err := db.extractTblName(fileName)
+	pub, err := db.extractPubName(fname)
 	if err != nil {
 		return fmt.Errorf("failed to extract table name: %v", err)
 	}
 
 	err = crdb.ExecuteTx(ctx, db.DB, txopts, func(tx *sql.Tx) error {
-		return createJobTx(tx, cid.Bytes(), tblName)
+		return createJobTx(tx, cid.Bytes(), pub)
 	})
 	if err != nil {
 		return fmt.Errorf("failed to execute transaction: %v", err)
@@ -82,7 +82,7 @@ func (db *DBClient) CreateJob(ctx context.Context, cidStr string, fileName strin
 }
 
 type unfinihedJobs struct {
-	NSName    string
+	Pub       string
 	Cid       []byte
 	Activated time.Time
 }
@@ -103,8 +103,8 @@ func (db *DBClient) UnfinishedJobs(ctx context.Context) ([]unfinihedJobs, error)
 			return nil, fmt.Errorf("failed to scan row: %v", err)
 		}
 		result = append(result, unfinihedJobs{
-			NSName: nsName,
-			Cid:    cid,
+			Pub: nsName,
+			Cid: cid,
 		})
 	}
 

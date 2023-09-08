@@ -4,17 +4,59 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
 
 	w3s "github.com/web3-storage/go-w3s-client"
 )
 
 // FileUploader dowload a file form GCS and uploads to web3.storage.
-type FileUploader struct {
-	Bucket        string     // SourceBucket is the name of the GCS bucket where the file will be uploaded from.
-	Filename      string     // Filename is the name of the file to be uploaded.
-	StorageClient GCS        // GCSClient is a GCSOps instance used to interact with GCS.
-	DealClient    w3s.Client // W3SClient is a w3s.Client instance used to interact with W3S.
-	DBClient      Crdb       // CrdbClient is a CrdbOps instance used to interact with CockroachDB.
+type FileUploader struct {		
+	StorageClient GCS        // StorageClient is a GCS instance used to interact with GCS.
+	DealClient    w3s.Client // DealClient is a w3s.Client instance used to interact with W3S.
+	DBClient      Crdb       // DBClient is a Crdb instance used to interact with CockroachDB.
+}
+
+type UploaderConfig struct {
+	W3SToken string
+	CrdbConn string
+}
+
+func NewFileUploader(ctx context.Context, eventData []byte, cfg *UploaderConfig) (*FileUploader, error) {
+	// Initialize GCS client to download file
+	// bucket name and file name are passed in the CloudEvent
+	storageClient, err := NewGCSClient(ctx, eventData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize storage client: %v", err)
+	}
+
+	// Initialize web3.storage client to upload file
+	w3sOpts := []w3s.Option{
+		w3s.WithToken(cfg.W3SToken),
+		w3s.WithHTTPClient(
+			&http.Client{
+				Timeout: 0, // no timeout
+			},
+		),
+	}
+	w3sClient, err := w3s.NewClient(w3sOpts...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize web3.storage client: %v", err)
+	}
+
+	// Initialize cockroachdb client to store metadata
+	dbClient, err := NewDB(cfg.CrdbConn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize cockroachdb client: %v", err)
+	}
+	// defer dbClient.DB.Close()
+
+	u := &FileUploader{
+		StorageClient: storageClient,
+		DealClient:    w3sClient,
+		DBClient:      dbClient,
+	}
+
+	return u, nil
 }
 
 // Upload downloads a file from GCS and uploads it to web3.storage.

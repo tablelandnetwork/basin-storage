@@ -27,8 +27,8 @@ func createJobTx(tx *sql.Tx, cidBytes []byte, relName string) error {
 
 type Crdb interface {
 	CreateJob(ctx context.Context, cidStr string, relationName string) error
-	UnfinishedJobs(ctx context.Context) ([][]byte, error)
-	UpdateJobStatus(ctx context.Context, cidStr string, activation time.Time) error
+	UnfinishedJobs(ctx context.Context) ([]unfinihedJobs, error)
+	UpdateJobStatus(ctx context.Context, cid []byte, activation time.Time) error
 }
 
 type DBClient struct {
@@ -81,34 +81,40 @@ func (db *DBClient) CreateJob(ctx context.Context, cidStr string, fileName strin
 	return nil
 }
 
-func (db *DBClient) UnfinishedJobs(ctx context.Context) ([][]byte, error) {
-	rows, err := db.DB.Query("SELECT cid FROM deals WHERE activated is NULL")
+type unfinihedJobs struct {
+	NSName    string
+	Cid       []byte
+	Activated time.Time
+}
+
+func (db *DBClient) UnfinishedJobs(ctx context.Context) ([]unfinihedJobs, error) {
+	rows, err := db.DB.Query(
+		"SELECT namespaces.name, deals.cid FROM namespaces, deals WHERE namespaces.id = deals.ns_id and activated is NULL")
 	if err != nil {
-		return nil, fmt.Errorf("failed to query deals: %v", err)
+		return nil, fmt.Errorf("failed to query unfinished jobs: %v", err)
 	}
 	defer rows.Close()
 
-	var cids [][]byte
+	var result []unfinihedJobs
 	for rows.Next() {
 		var cid []byte
-		if err := rows.Scan(&cid); err != nil {
+		var nsName string
+		if err := rows.Scan(&nsName, &cid); err != nil {
 			return nil, fmt.Errorf("failed to scan row: %v", err)
 		}
-		cids = append(cids, cid)
+		result = append(result, unfinihedJobs{
+			NSName: nsName,
+			Cid:    cid,
+		})
 	}
 
-	return cids, nil
+	return result, nil
 }
 
-func (db *DBClient) UpdateJobStatus(ctx context.Context, cidStr string, activation time.Time) error {
-	cid, err := cid.Decode(cidStr)
-	if err != nil {
-		return fmt.Errorf("failed to decode cid: %v", err)
-	}
-
-	_, err = db.DB.Exec(
-		"UPDATE deals SET activation = $1 WHERE cid = $2",
-		activation, cid.Bytes(),
+func (db *DBClient) UpdateJobStatus(ctx context.Context, cid []byte, activation time.Time) error {
+	_, err := db.DB.Exec(
+		"UPDATE deals SET activated = $1 WHERE cid = $2",
+		activation, cid,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to update job status: %v", err)

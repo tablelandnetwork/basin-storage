@@ -17,7 +17,7 @@ clean-mocks:
 .PHONY: clean-mocks
 
 uploader-local:
-	WEB3STORAGE_TOKEN=$(W3S_TOKEN) CRDB_CONN_STRING=$(CRDB_CONN) FUNCTION_TARGET=Uploader go run cmd/main.go
+	FUNCTION_TARGET=Uploader go run cmd/main.go
 .PHONY: uploader-local
 
 uploader-deploy:
@@ -31,12 +31,25 @@ uploader-deploy:
 	--trigger-event-filters="bucket=tableland-entrypoint"  \
 	--memory 8192MB \
 	--timeout 3600s \
-	--set-env-vars WEB3STORAGE_TOKEN=$(W3S_TOKEN),CRDB_CONN_STRING="$(CRDB_CONN)"
+	--env-vars-file uploader.env.yml
 .PHONY: uploader-deploy
 
-statuschecker-local:
-	WEB3STORAGE_TOKEN=$(W3S_TOKEN) CRDB_CONN_STRING=$(CRDB_CONN) FUNCTION_TARGET=StatusChecker go run cmd/main.go
-.PHONY: statuschecker-local
+checker-local:
+	FUNCTION_TARGET=StatusChecker go run cmd/main.go
+.PHONY: checker-local
+
+checker-deploy:
+	gcloud functions deploy go-http-function \
+  	--gen2 \
+	--region=us-central1 \
+	--runtime=go120 \
+	--source=. \
+	--entry-point=StatusChecker \
+	--trigger-http \
+	--memory 8192MB \
+	--timeout 600s \
+	--env-vars-file checker.env.yml  	
+.PHONY: checker-deploy
 
 ethereum:
 	go run github.com/ethereum/go-ethereum/cmd/abigen@v1.11.4 --abi ./evm/basin_storage/out/BasinStorage.sol/BasinStorage.abi.json --bin ./evm/basin_storage/out/BasinStorage.sol/BasinStorage.bin --pkg ethereum --type Contract --out pkg/ethereum/contract.go

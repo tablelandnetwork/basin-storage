@@ -30,10 +30,15 @@ This repository includes a development server that acts an a event trigger durin
 
 ## Running
 
-Start the development server.
+Start the development server for testing Clould Functions locally.
+The required environment variables can be provided in `uploader.env.yml` and `checker.env.yml`.
 
 ```bash
-W3S_TOKEN=<web3storage token> CRDB_CONN="<crdb connection string>" FUNCTION_TARGET=Uploader make uploader-local
+make uploader-local
+```
+
+```bash
+make checker-local
 ```
 
 After the server is running, a mock cloud event can be triggered. It will execute the handler locally. In the following payload, we must have a real file path and a bucket for event simulation.
@@ -56,10 +61,17 @@ curl -X POST http://localhost:8080 \
 }'
 ```
 
+The checker function can be triggered by simply sending a POST request for example `curl -XPOST localhost:8080`.
+
+
 ## Deploying Function
 
 ```bash
-W3S_TOKEN=<token> CRDB_CONN="<postgres connenction str>" make uploader-deploy
+make uploader-deploy
+```
+
+```bash
+make checker-deploy
 ```
 
 ## Run tests

@@ -26,7 +26,7 @@ func init() {
 func Uploader(ctx context.Context, e event.Event) error {
 	// Set a timeout of 60 minutes, thats the max time a function can run on GCP (gen2)
 	// we want to ensure larger files can be uploaded
-	cctx, cancel := context.WithTimeout(context.Background(), 60*time.Minute)
+	cctx, cancel := context.WithTimeout(ctx, 60*time.Minute)
 	defer cancel()
 
 	// Read config from environment variables
@@ -75,5 +75,4 @@ func StatusChecker(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, errMsg, http.StatusInternalServerError)
 		return
 	}
-
 }

@@ -24,14 +24,17 @@ func NewIntermediateFile(data []byte, name string) *IntermediateFile {
 
 // Implement fs.File methods //
 
+// Stat returns a fs.FileInfo describing the file.
 func (f *IntermediateFile) Stat() (fs.FileInfo, error) {
 	return &fileInfo{name: f.name, size: f.data.Size()}, nil
 }
 
+// Read reads up to len(p) bytes into p.
 func (f *IntermediateFile) Read(p []byte) (n int, err error) {
 	return f.data.Read(p)
 }
 
+// Close noop for an in memory virtual file.
 func (f *IntermediateFile) Close() error {
 	return nil
 }
@@ -41,9 +44,11 @@ type fileInfo struct {
 	size int64
 }
 
+// Implement fs.FileInfo methods //
+
 func (fi *fileInfo) Name() string       { return fi.name }
 func (fi *fileInfo) Size() int64        { return fi.size }
-func (fi *fileInfo) Mode() fs.FileMode  { return 0444 } // Read-only
+func (fi *fileInfo) Mode() fs.FileMode  { return 0o444 } // Read-only
 func (fi *fileInfo) ModTime() time.Time { return time.Now() }
 func (fi *fileInfo) IsDir() bool        { return false }
 func (fi *fileInfo) Sys() interface{}   { return nil }

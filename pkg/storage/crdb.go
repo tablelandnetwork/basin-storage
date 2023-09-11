@@ -4,10 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
 	"github.com/ipfs/go-cid"
+	// Blank-import libpq package for SQL.
 	_ "github.com/lib/pq"
 	"github.com/pkg/errors"
 
@@ -25,17 +27,20 @@ func createJobTx(tx *sql.Tx, cidBytes []byte, relName string) error {
 	return nil
 }
 
+// Crdb is an interface that defines the methods to interact with CockroachDB.
 type Crdb interface {
 	CreateJob(ctx context.Context, cidStr string, fileName string) error
-	UnfinishedJobs(ctx context.Context) ([]unfinihedJobs, error)
+	UnfinishedJobs(ctx context.Context) ([]UnfinihedJobs, error)
 	UpdateJobStatus(ctx context.Context, cid []byte, activation time.Time) error
 }
 
+// DBClient is a Crdb implementation.
 type DBClient struct {
 	// Initialize cockroachdb client to store metadata
 	DB *sql.DB
 }
 
+// NewDB creates a new DBClient.
 func NewDB(conn string) (*DBClient, error) {
 	db, err := sql.Open("postgres", conn)
 	if err != nil {
@@ -55,6 +60,7 @@ func (db *DBClient) extractPubName(filename string) (string, error) {
 	return parts[len(parts)-2], nil
 }
 
+// CreateJob creates a new job in the DB.
 func (db *DBClient) CreateJob(ctx context.Context, cidStr string, fname string) error {
 	cid, err := cid.Decode(cidStr)
 	if err != nil {
@@ -81,28 +87,35 @@ func (db *DBClient) CreateJob(ctx context.Context, cidStr string, fname string) 
 	return nil
 }
 
-type unfinihedJobs struct {
+// UnfinihedJobs represents an unfinished job.
+type UnfinihedJobs struct {
 	Pub       string
 	Cid       []byte
 	Activated time.Time
 }
 
-func (db *DBClient) UnfinishedJobs(ctx context.Context) ([]unfinihedJobs, error) {
-	rows, err := db.DB.Query(
+// UnfinishedJobs returns all unfinished jobs.
+func (db *DBClient) UnfinishedJobs(ctx context.Context) ([]UnfinihedJobs, error) {
+	rows, err := db.DB.QueryContext(ctx,
 		"SELECT namespaces.name, deals.cid FROM namespaces, deals WHERE namespaces.id = deals.ns_id and activated is NULL")
 	if err != nil {
 		return nil, fmt.Errorf("failed to query unfinished jobs: %v", err)
 	}
-	defer rows.Close()
 
-	var result []unfinihedJobs
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Fatalf("error when closing crdb connection: %v", err)
+		}
+	}()
+
+	var result []UnfinihedJobs
 	for rows.Next() {
 		var cid []byte
 		var nsName string
 		if err := rows.Scan(&nsName, &cid); err != nil {
 			return nil, fmt.Errorf("failed to scan row: %v", err)
 		}
-		result = append(result, unfinihedJobs{
+		result = append(result, UnfinihedJobs{
 			Pub: nsName,
 			Cid: cid,
 		})
@@ -111,8 +124,9 @@ func (db *DBClient) UnfinishedJobs(ctx context.Context) ([]unfinihedJobs, error)
 	return result, nil
 }
 
+// UpdateJobStatus updates the job status in the DB.
 func (db *DBClient) UpdateJobStatus(ctx context.Context, cid []byte, activation time.Time) error {
-	_, err := db.DB.Exec(
+	_, err := db.DB.ExecContext(ctx,
 		"UPDATE deals SET activated = $1 WHERE cid = $2",
 		activation, cid,
 	)

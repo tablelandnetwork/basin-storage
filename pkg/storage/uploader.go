@@ -4,23 +4,26 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 
 	w3s "github.com/web3-storage/go-w3s-client"
 )
 
 // FileUploader dowload a file form GCS and uploads to web3.storage.
-type FileUploader struct {		
+type FileUploader struct {
 	StorageClient GCS        // StorageClient is a GCS instance used to interact with GCS.
 	DealClient    w3s.Client // DealClient is a w3s.Client instance used to interact with W3S.
 	DBClient      Crdb       // DBClient is a Crdb instance used to interact with CockroachDB.
 }
 
+// UploaderConfig defines the configuration for a FileUploader.
 type UploaderConfig struct {
 	W3SToken string
 	CrdbConn string
 }
 
+// NewFileUploader creates a new FileUploader.
 func NewFileUploader(ctx context.Context, eventData []byte, cfg *UploaderConfig) (*FileUploader, error) {
 	// Initialize GCS client to download file
 	// bucket name and file name are passed in the CloudEvent
@@ -71,7 +74,12 @@ func (u *FileUploader) Upload(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to get object reader: %v", err)
 	}
-	defer reader.Close()
+
+	defer func() {
+		if err := reader.Close(); err != nil {
+			log.Fatalf("error when closing cloud storage reader: %v", err)
+		}
+	}()
 
 	data, err := io.ReadAll(reader)
 	if err != nil {

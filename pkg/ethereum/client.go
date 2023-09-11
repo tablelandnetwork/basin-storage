@@ -13,8 +13,12 @@ import (
 	"github.com/textileio/go-tableland/pkg/wallet"
 )
 
+// BasinStorage is an interface that defines the methods to interact with the BasinStorage smart contract.
 type BasinStorage interface {
-	EstimateGas(ctx context.Context, txOpts *bind.TransactOpts, pub string, deals []BasinStorageDealInfo) (*bind.TransactOpts, error)
+	EstimateGas(
+		ctx context.Context,
+		txOpts *bind.TransactOpts,
+		pub string, deals []BasinStorageDealInfo) (*bind.TransactOpts, error)
 	GetRecentDeals(ctx context.Context, pub string) (map[BasinStorageDealInfo]struct{}, error)
 	AddDeals(ctx context.Context, pub string, deals []BasinStorageDealInfo) error
 }
@@ -48,6 +52,7 @@ func NewClient(
 	}, nil
 }
 
+// EstimateGas estimates the gas required to execute the AddDeals function of the BasinStorage smart contract.
 func (c *Client) EstimateGas(
 	ctx context.Context,
 	txOpts *bind.TransactOpts,
@@ -85,9 +90,9 @@ func (c *Client) EstimateGas(
 		GasTipCap: gasTipCap.Mul(gasTipCap, big.NewInt(500)),
 		GasLimit:  gasLimit * 4,
 	}, nil
-
 }
 
+// GetRecentDeals returns the latest 10 deals added to the BasinStorage smart contract for the given publisher.
 func (c *Client) GetRecentDeals(ctx context.Context, pub string) (map[BasinStorageDealInfo]struct{}, error) {
 	callOpts := &bind.CallOpts{
 		Pending: true,
@@ -108,6 +113,7 @@ func (c *Client) GetRecentDeals(ctx context.Context, pub string) (map[BasinStora
 	return recentDeals, nil
 }
 
+// AddDeals adds the given deals to the BasinStorage smart contract for the given pub.
 func (c *Client) AddDeals(ctx context.Context,
 	pub string,
 	deals []BasinStorageDealInfo,

@@ -10,29 +10,29 @@ import (
 	"github.com/tablelandnetwork/basin-storage/pkg/ethereum"
 )
 
-// Mock interface for BasinStorage Contract
+// Mock interface for BasinStorage Contract.
 type MockBasinStorage struct {
 	deals []ethereum.BasinStorageDealInfo
 }
 
 func (c *MockBasinStorage) EstimateGas(
-	ctx context.Context,
-	txOpts *bind.TransactOpts,
-	pub string,
-	deals []ethereum.BasinStorageDealInfo,
+	_ context.Context,
+	_ *bind.TransactOpts,
+	_ string,
+	_ []ethereum.BasinStorageDealInfo,
 ) (*bind.TransactOpts, error) {
 	return &bind.TransactOpts{}, nil
 }
 
 func (c *MockBasinStorage) GetRecentDeals(
-	ctx context.Context, pub string,
+	_ context.Context, _ string,
 ) (map[ethereum.BasinStorageDealInfo]struct{}, error) {
 	return nil, nil
 }
 
 func (c *MockBasinStorage) AddDeals(
-	ctx context.Context,
-	pub string,
+	_ context.Context,
+	_ string,
 	deals []ethereum.BasinStorageDealInfo,
 ) error {
 	c.deals = append(c.deals, deals...)
@@ -46,7 +46,7 @@ func TestStatusChecker(t *testing.T) {
 		deals: []ethereum.BasinStorageDealInfo{},
 	}
 	db := &mockCrdb{
-		jobs: []unfinihedJobs{
+		jobs: []UnfinihedJobs{
 			{
 				Pub:       "myfile",
 				Cid:       getCIDFromBytes([]byte("data for myfile")).Bytes(),
@@ -73,5 +73,4 @@ func TestStatusChecker(t *testing.T) {
 		// after the call to ProcessJobs
 		assert.NotEqual(t, time.Time{}, j.Activated)
 	}
-
 }

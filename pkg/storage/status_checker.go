@@ -14,6 +14,7 @@ import (
 	w3s "github.com/web3-storage/go-w3s-client"
 )
 
+// StatusCheckerConfig defines the configuration for a StatusChecker.
 type StatusCheckerConfig struct {
 	W3SToken         string
 	CrdbConn         string
@@ -22,12 +23,14 @@ type StatusCheckerConfig struct {
 	BasinStorageAddr string
 }
 
+// StatusChecker checks the status of a job and updates the status in the DB.
 type StatusChecker struct {
 	StatusClient   w3s.Client            // DealClient is a w3s.Client instance used to interact with W3S.
 	DBClient       Crdb                  // DBClient is a Crdb instance used to interact with CockroachDB.
 	contractClient ethereum.BasinStorage // *ethereum.Client // TODO: change to an interface for testing
 }
 
+// NewStatusChecker creates a new StatusChecker.
 func NewStatusChecker(ctx context.Context, cfg *StatusCheckerConfig) (*StatusChecker, error) {
 	wallet, err := wallet.NewWallet(cfg.PrivateKey)
 	if err != nil {
@@ -80,7 +83,6 @@ func NewStatusChecker(ctx context.Context, cfg *StatusCheckerConfig) (*StatusChe
 		DBClient:       dbClient,
 		contractClient: ethClient,
 	}, nil
-
 }
 
 func (sc *StatusChecker) getStatus(ctx context.Context, CIDBytes []byte) (*w3s.Status, error) {
@@ -107,6 +109,11 @@ func (sc *StatusChecker) findEarliestDeal(deals []w3s.Deal) w3s.Deal {
 	return earliestDeal
 }
 
+// ProcessJobs checks the status of all unfinished jobs.
+// If a job has deals, it adds the deals to the BasinStorage contract.
+// If a job has no deals, it does nothing.
+// If a job has already been activated, it does nothing.
+// Finally, it updates the job status in the DB.
 func (sc *StatusChecker) ProcessJobs(ctx context.Context) error {
 	unfinihedJobs, err := sc.DBClient.UnfinishedJobs(ctx)
 	if err != nil {
@@ -146,7 +153,6 @@ func (sc *StatusChecker) ProcessJobs(ctx context.Context) error {
 		} else {
 			fmt.Println("no deals found for job, skipping:", job.Pub, job.Cid)
 		}
-
 	}
 	return nil
 }

@@ -4,18 +4,18 @@ import (
 	"log"
 	"os"
 
-	// Blank-import the function package so the init() runs
+	// Blank-import the function package so the init() runs.
 	"github.com/GoogleCloudPlatform/functions-framework-go/funcframework"
 	_ "github.com/tablelandnetwork/basin-storage"
 	"gopkg.in/yaml.v2"
 )
 
-type UploaderVars struct {
+type uploaderVars struct {
 	W3SToken string `yaml:"WEB3STORAGE_TOKEN"`
 	CrdbConn string `yaml:"CRDB_CONN_STRING"`
 }
 
-type StatusCheckerVars struct {
+type statusCheckerVars struct {
 	W3SToken   string `yaml:"WEB3STORAGE_TOKEN"`
 	CrdbConn   string `yaml:"CRDB_CONN_STRING"`
 	PrivateKey string `yaml:"PRIVATE_KEY"`
@@ -35,13 +35,16 @@ func main() {
 		if err != nil {
 			log.Fatalf("error: %v", err)
 		}
-		vars := UploaderVars{}
-		err = yaml.Unmarshal(data, &vars)
-		if err != nil {
+		vars := uploaderVars{}
+		if err = yaml.Unmarshal(data, &vars); err != nil {
 			log.Fatalf("error: %v", err)
 		}
-		os.Setenv("WEB3STORAGE_TOKEN", vars.W3SToken)
-		os.Setenv("CRDB_CONN_STRING", vars.CrdbConn)
+		if err = os.Setenv("WEB3STORAGE_TOKEN", vars.W3SToken); err != nil {
+			log.Fatalf("error: %v", err)
+		}
+		if err = os.Setenv("CRDB_CONN_STRING", vars.CrdbConn); err != nil {
+			log.Fatalf("error: %v", err)
+		}
 	}
 
 	if targetFn == "StatusChecker" {
@@ -49,21 +52,20 @@ func main() {
 		if err != nil {
 			log.Fatalf("error: %v", err)
 		}
-		vars := StatusCheckerVars{}
-		err = yaml.Unmarshal(data, &vars)
-		if err != nil {
+		vars := statusCheckerVars{}
+		if err = yaml.Unmarshal(data, &vars); err != nil {
 			log.Fatalf("error: %v", err)
 		}
-		os.Setenv("WEB3STORAGE_TOKEN", vars.W3SToken)
-		os.Setenv("CRDB_CONN_STRING", vars.CrdbConn)
-		os.Setenv("PRIVATE_KEY", vars.PrivateKey)
+		if err = os.Setenv("WEB3STORAGE_TOKEN", vars.W3SToken); err != nil {
+			log.Fatalf("error: %v", err)
+		}
+		if err = os.Setenv("CRDB_CONN_STRING", vars.CrdbConn); err != nil {
+			log.Fatalf("error: %v", err)
+		}
+		if err = os.Setenv("PRIVATE_KEY", vars.PrivateKey); err != nil {
+			log.Fatalf("error: %v", err)
+		}
 	}
-
-	// Unmarshal the YAML data into the struct
-
-	// read config from env files and set as env vars
-	// if target functions is uploader load uploader env
-	// if target functions is statuschecker load statuschecker env
 
 	if err := funcframework.Start(port); err != nil {
 		log.Fatalf("funcframework.Start: %v\n", err)

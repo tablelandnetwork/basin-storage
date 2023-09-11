@@ -3,12 +3,11 @@ package storage
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"io"
 	"io/fs"
 	"testing"
 	"time"
-
-	"crypto/sha256"
 
 	"github.com/ipfs/go-cid"
 	"github.com/tablelandnetwork/basin-storage/mocks"
@@ -20,7 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Mock interface for w3s.Client
+// Mock interface for w3s.Client.
 type mockW3sClient struct {
 	Files []fs.File
 }
@@ -36,19 +35,20 @@ func getCIDFromBytes(mockData []byte) cid.Cid {
 	return cidV1
 }
 
-func (m *mockW3sClient) Put(ctx context.Context, file fs.File, opts ...w3s.PutOption) (cid.Cid, error) {
+func (m *mockW3sClient) Put(_ context.Context, file fs.File, _ ...w3s.PutOption) (cid.Cid, error) {
 	m.Files = append(m.Files, file)
 	return getCIDFromBytes(mockData()), nil
 }
 
-func (m *mockW3sClient) Get(ctx context.Context, cid cid.Cid) (*w3http.Web3Response, error) {
+func (m *mockW3sClient) Get(_ context.Context, _ cid.Cid) (*w3http.Web3Response, error) {
 	return nil, nil
 }
 
-func (m *mockW3sClient) PutCar(ctx context.Context, reader io.Reader) (cid.Cid, error) {
+func (m *mockW3sClient) PutCar(_ context.Context, _ io.Reader) (cid.Cid, error) {
 	return cid.Cid{}, nil
 }
-func (m *mockW3sClient) Status(ctx context.Context, cid cid.Cid) (*w3s.Status, error) {
+
+func (m *mockW3sClient) Status(_ context.Context, cid cid.Cid) (*w3s.Status, error) {
 	deals := []w3s.Deal{
 		{
 			Activation:        time.Now(),
@@ -70,10 +70,12 @@ func (m *mockW3sClient) Status(ctx context.Context, cid cid.Cid) (*w3s.Status, e
 	}
 	return status, nil
 }
-func (m *mockW3sClient) List(ctx context.Context, opts ...w3s.ListOption) (*w3s.UploadIterator, error) {
+
+func (m *mockW3sClient) List(_ context.Context, _ ...w3s.ListOption) (*w3s.UploadIterator, error) {
 	return nil, nil
 }
-func (m *mockW3sClient) Pin(context.Context, cid.Cid, ...w3s.PinOption) (*w3s.PinResponse, error) {
+
+func (m *mockW3sClient) Pin(_ context.Context, _ cid.Cid, _ ...w3s.PinOption) (*w3s.PinResponse, error) {
 	return nil, nil
 }
 
@@ -86,12 +88,12 @@ func (mrc *MockReadCloser) Close() error {
 }
 
 type mockCrdb struct {
-	jobs []unfinihedJobs
+	jobs []UnfinihedJobs
 }
 
-func (m *mockCrdb) CreateJob(ctx context.Context, cidStr string, pub string) error {
+func (m *mockCrdb) CreateJob(_ context.Context, cidStr string, pub string) error {
 	cid, _ := cid.Decode(cidStr)
-	m.jobs = append(m.jobs, unfinihedJobs{
+	m.jobs = append(m.jobs, UnfinihedJobs{
 		Pub:       pub,
 		Cid:       cid.Bytes(),
 		Activated: time.Time{},
@@ -99,9 +101,9 @@ func (m *mockCrdb) CreateJob(ctx context.Context, cidStr string, pub string) err
 	return nil
 }
 
-func (m *mockCrdb) UnfinishedJobs(ctx context.Context) ([]unfinihedJobs, error) {
+func (m *mockCrdb) UnfinishedJobs(_ context.Context) ([]UnfinihedJobs, error) {
 	var t time.Time
-	ufj := []unfinihedJobs{}
+	ufj := []UnfinihedJobs{}
 	for _, job := range m.jobs {
 		if job.Activated == t {
 			ufj = append(ufj, job)
@@ -110,7 +112,7 @@ func (m *mockCrdb) UnfinishedJobs(ctx context.Context) ([]unfinihedJobs, error) 
 	return ufj, nil
 }
 
-func (m *mockCrdb) UpdateJobStatus(ctx context.Context, cid []byte, activation time.Time) error {
+func (m *mockCrdb) UpdateJobStatus(_ context.Context, cid []byte, activation time.Time) error {
 	for i, job := range m.jobs {
 		if bytes.Equal(job.Cid, cid) {
 			m.jobs[i].Activated = activation
@@ -137,7 +139,7 @@ func TestUploader(t *testing.T) {
 			Files: []fs.File{},
 		},
 		DBClient: &mockCrdb{
-			jobs: []unfinihedJobs{},
+			jobs: []UnfinihedJobs{},
 		},
 	}
 
@@ -150,14 +152,19 @@ func TestUploader(t *testing.T) {
 	files := uploader.DealClient.(*mockW3sClient).Files
 	assert.Equal(t, 1, len(files))
 
-	fStat, _ := files[0].Stat()
+	fStat, err := files[0].Stat()
+	assert.NoError(t, err)
 	assert.Equal(t, "myfile", fStat.Name())
 	assert.Equal(t, int64(11), fStat.Size())
 
 	// Read the file contents that was send to (mocked) w3s
 	buf := make([]byte, 11)
-	files[0].Read(buf)
-	files[0].Close()
+	_, err = files[0].Read(buf)
+	assert.NoError(t, err)
+
+	err = files[0].Close()
+	assert.NoError(t, err)
+
 	assert.Equal(t, mockData(), buf)
 
 	// Assert that the CID was added to the database with the correct pub name
@@ -168,5 +175,4 @@ func TestUploader(t *testing.T) {
 	cid, err := cid.Parse(db.jobs[0].Cid)
 	assert.NoError(t, err)
 	assert.Equal(t, getCIDFromBytes(mockData()).String(), cid.String())
-
 }

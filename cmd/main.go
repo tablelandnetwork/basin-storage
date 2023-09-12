@@ -19,6 +19,7 @@ type statusCheckerVars struct {
 	W3SToken   string `yaml:"WEB3STORAGE_TOKEN"`
 	CrdbConn   string `yaml:"CRDB_CONN_STRING"`
 	PrivateKey string `yaml:"PRIVATE_KEY"`
+	ChainID    string `yaml:"CHAIN_ID"`
 }
 
 func main() {
@@ -63,6 +64,9 @@ func main() {
 			log.Fatalf("error: %v", err)
 		}
 		if err = os.Setenv("PRIVATE_KEY", vars.PrivateKey); err != nil {
+			log.Fatalf("error: %v", err)
+		}
+		if err = os.Setenv("CHAIN_ID", vars.ChainID); err != nil {
 			log.Fatalf("error: %v", err)
 		}
 	}

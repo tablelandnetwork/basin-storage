@@ -24,11 +24,11 @@ uploader-create:
 	gcloud functions deploy go-finalize-function \
 	--gen2 \
 	--runtime=go120 \
-	--region=us-central1 \
+	--region=us-east1 \
 	--source=. \
 	--entry-point=Uploader \
 	--trigger-event-filters="type=google.cloud.storage.object.v1.finalized" \
-	--trigger-event-filters="bucket=tableland-entrypoint"  \
+	--trigger-event-filters="bucket=tableland-basin-staging"  \
 	--memory 8192MB \
 	--timeout 3600s \
 	--env-vars-file uploader.env.yml

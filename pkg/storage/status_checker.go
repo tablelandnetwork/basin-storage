@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/ipfs/go-cid"
 	"github.com/tablelandnetwork/basin-storage/pkg/ethereum"
@@ -21,6 +22,7 @@ type StatusCheckerConfig struct {
 	PrivateKey       string
 	BackendURL       string
 	BasinStorageAddr string
+	ChainID          string
 }
 
 // StatusChecker checks the status of a job and updates the status in the DB.
@@ -47,10 +49,15 @@ func NewStatusChecker(ctx context.Context, cfg *StatusCheckerConfig) (*StatusChe
 		return nil, fmt.Errorf("failed to read basin storage address: %v", err)
 	}
 
+	chainID, err := strconv.ParseUint(cfg.ChainID, int(10), 64)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read chain ID: %v", err)
+	}
+
 	ethClient, err := ethereum.NewClient(
 		backend,
-		uint64(314159), // from env
-		addr.Address(), // from env
+		chainID,
+		addr.Address(),
 		wallet,
 	)
 	if err != nil {

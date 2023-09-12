@@ -34,19 +34,19 @@ type Client struct {
 
 // NewClient creates a new Client.
 func NewClient(
-	backend bind.ContractBackend,
+	contractBackend bind.ContractBackend,
 	chainID uint64,
 	contractAddr common.Address,
 	wallet *wallet.Wallet,
 ) (*Client, error) {
-	contract, err := NewContract(contractAddr, backend)
+	contract, err := NewContract(contractAddr, contractBackend)
 	if err != nil {
 		return nil, fmt.Errorf("creating contract: %v", err)
 	}
 	return &Client{
 		contract:     contract,
 		contractAddr: contractAddr,
-		backend:      backend,
+		backend:      contractBackend,
 		wallet:       wallet,
 		chainID:      chainID,
 	}, nil
@@ -159,8 +159,8 @@ func (c *Client) AddDeals(ctx context.Context,
 		}
 
 		fmt.Printf("tx sent: %v \n", tx.Hash())
-
 		// TODO: wait for tx to be included in a block?
+
 	}
 
 	return nil

@@ -58,6 +58,7 @@ func StatusChecker(w http.ResponseWriter, r *http.Request) {
 		W3SToken:         os.Getenv("WEB3STORAGE_TOKEN"),
 		CrdbConn:         os.Getenv("CRDB_CONN_STRING"),
 		PrivateKey:       os.Getenv("PRIVATE_KEY"),
+		ChainID:          os.Getenv("CHAIN_ID"),
 		BackendURL:       "https://api.calibration.node.glif.io/rpc/v1", // TODO: move to config
 		BasinStorageAddr: "0x4b1f4d8100e51afe644b189d77784dec225e0596",  // TODO: move to config
 	}
@@ -65,7 +66,7 @@ func StatusChecker(w http.ResponseWriter, r *http.Request) {
 	sc, err := storage.NewStatusChecker(ctx, cfg)
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to initialize status checker: %v", err)
-		fmt.Println(errMsg) // todo: enbale propper logging
+		fmt.Println(errMsg) // todo: enbale proper logging
 		http.Error(w, errMsg, http.StatusInternalServerError)
 		return
 	}
@@ -73,7 +74,7 @@ func StatusChecker(w http.ResponseWriter, r *http.Request) {
 	err = sc.ProcessJobs(ctx)
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to process job: %v", err)
-		fmt.Println(errMsg) // todo: enbale propper logging
+		fmt.Println(errMsg) // todo: enbale proper logging
 		http.Error(w, errMsg, http.StatusInternalServerError)
 		return
 	}

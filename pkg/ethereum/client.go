@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 	"strings"
+	"time"
 
 	eth "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -28,6 +29,7 @@ type Client struct {
 	contract     *Contract
 	contractAddr common.Address
 	backend      bind.ContractBackend
+	rpcBackend   bind.DeployBackend
 	wallet       *wallet.Wallet
 	chainID      uint64
 }
@@ -35,6 +37,7 @@ type Client struct {
 // NewClient creates a new Client.
 func NewClient(
 	contractBackend bind.ContractBackend,
+	rpcBackend bind.DeployBackend,
 	chainID uint64,
 	contractAddr common.Address,
 	wallet *wallet.Wallet,
@@ -47,6 +50,7 @@ func NewClient(
 		contract:     contract,
 		contractAddr: contractAddr,
 		backend:      contractBackend,
+		rpcBackend:   rpcBackend,
 		wallet:       wallet,
 		chainID:      chainID,
 	}, nil
@@ -147,6 +151,7 @@ func (c *Client) AddDeals(ctx context.Context,
 			dealsToAdd = append(dealsToAdd, d)
 		} else {
 			dealsToAdd = append(dealsToAdd, d)
+			// TODO: remove this^ and uncomment the following
 			// fmt.Println("deal already exists, skipping", d.Id, d.SelectorPath)
 		}
 	}
@@ -159,7 +164,13 @@ func (c *Client) AddDeals(ctx context.Context,
 		}
 
 		fmt.Printf("tx sent: %v \n", tx.Hash())
-		// TODO: wait for tx to be included in a block?
+		// TODO: move inside a goroutine
+		time.Sleep(150 * time.Second)
+		receipt, err := c.rpcBackend.TransactionReceipt(ctx, tx.Hash())
+		if err != nil {
+			return fmt.Errorf("failed to get tx receipt: %v", err)
+		}
+		fmt.Printf("got tx receipt: %v \n", receipt)
 
 	}
 

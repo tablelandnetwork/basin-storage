@@ -56,6 +56,7 @@ func NewStatusChecker(ctx context.Context, cfg *StatusCheckerConfig) (*StatusChe
 
 	ethClient, err := ethereum.NewClient(
 		backend,
+		backend,
 		chainID,
 		addr.Address(),
 		wallet,

@@ -7,22 +7,17 @@ import (
 func TestExtractTableName(t *testing.T) {
 	tests := []struct {
 		filename   string
-		expected   string
+		expected   Pub
 		shouldFail bool
 	}{
 		{
-			filename:   "202308291525552525242120000000000-3ab461ed932d5f1c-1-2-00000001-office_dogs-2.parquet",
-			expected:   "office_dogs",
-			shouldFail: false,
-		},
-		{
-			filename:   "2020-04-02/202004022058072107140000000000000-56087568dba1e6b8-1-72-00000000-test_table-1.ndjson",
-			expected:   "test_table",
+			filename:   "202309110419279721253170000000000-4edb10f3fc54c757-1-2-00000000-basin_staging.eddie.data6-1.parquet",
+			expected:   Pub{Namespace: "eddie", Relation: "data6"},
 			shouldFail: false,
 		},
 		{
 			filename:   "invalid_filename_format.parquet",
-			expected:   "",
+			expected:   Pub{},
 			shouldFail: true,
 		},
 	}

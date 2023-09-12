@@ -80,7 +80,7 @@ func (c *Client) EstimateGas(
 		Data: data,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to estimate gas: %v", err)
+		return nil, fmt.Errorf("error while calling EstimateGas rpc: %v", err)
 	}
 
 	return &bind.TransactOpts{
@@ -130,7 +130,7 @@ func (c *Client) AddDeals(ctx context.Context,
 	// prepare tx opts with gas related params
 	txOpts, err = c.EstimateGas(ctx, txOpts, pub, deals)
 	if err != nil {
-		return fmt.Errorf("failed to estimate gas: %v", err)
+		return fmt.Errorf("failed to estimate gas for adding deals: %v", err)
 	}
 
 	// filter out deals that are already in the contract
@@ -146,7 +146,8 @@ func (c *Client) AddDeals(ctx context.Context,
 		if _, ok := recentDeals[d]; !ok {
 			dealsToAdd = append(dealsToAdd, d)
 		} else {
-			fmt.Println("deal already exists, skipping", d.Id, d.SelectorPath)
+			dealsToAdd = append(dealsToAdd, d)
+			// fmt.Println("deal already exists, skipping", d.Id, d.SelectorPath)
 		}
 	}
 
@@ -158,6 +159,8 @@ func (c *Client) AddDeals(ctx context.Context,
 		}
 
 		fmt.Printf("tx sent: %v \n", tx.Hash())
+
+		// TODO: wait for tx to be included in a block?
 	}
 
 	return nil

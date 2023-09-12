@@ -48,7 +48,9 @@ checker-deploy:
 	--trigger-http \
 	--memory 8192MB \
 	--timeout 600s \
-	--env-vars-file checker.env.yml  	
+	--service-account basin-status-checker-gcf@textile-310716.iam.gserviceaccount.com \
+	--no-allow-unauthenticated \
+	--env-vars-file checker.env.yml
 .PHONY: checker-deploy
 
 ethereum:

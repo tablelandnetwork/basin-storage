@@ -65,14 +65,18 @@ func StatusChecker(w http.ResponseWriter, r *http.Request) {
 	sc, err := storage.NewStatusChecker(ctx, cfg)
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to initialize status checker: %v", err)
+		fmt.Println(errMsg) // todo: enbale propper logging
 		http.Error(w, errMsg, http.StatusInternalServerError)
 		return
 	}
 
 	err = sc.ProcessJobs(ctx)
 	if err != nil {
-		errMsg := fmt.Sprintf("failed to initialize status checker: %v", err)
+		errMsg := fmt.Sprintf("failed to process job: %v", err)
+		fmt.Println(errMsg) // todo: enbale propper logging
 		http.Error(w, errMsg, http.StatusInternalServerError)
 		return
 	}
+
+	fmt.Fprintln(w, "OK")
 }

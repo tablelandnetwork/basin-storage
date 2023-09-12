@@ -63,7 +63,6 @@ curl -X POST http://localhost:8080 \
 
 The checker function can be triggered by simply sending a POST request for example `curl -XPOST localhost:8080`.
 
-
 ## Deploying Function
 
 ```bash

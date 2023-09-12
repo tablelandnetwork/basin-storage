@@ -148,10 +148,11 @@ func (sc *StatusChecker) ProcessJobs(ctx context.Context) error {
 				ctx, job.Cid, sc.findEarliestDeal(status.Deals).Activation,
 			)
 			if err != nil {
+				fmt.Println("failed to update job status:", err)
 				return fmt.Errorf("failed to update job status: %v", err)
 			}
 		} else {
-			fmt.Println("no deals found for job, skipping:", job.Pub, job.Cid)
+			fmt.Printf("no deals found for job, skipping: %s, %x \n", job.Pub, job.Cid)
 		}
 	}
 	return nil

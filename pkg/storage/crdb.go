@@ -16,10 +16,17 @@ import (
 	"github.com/cockroachdb/cockroach-go/crdb"
 )
 
-func createJobTx(tx *sql.Tx, cidBytes []byte, relName string) error {
+func createJobTx(tx *sql.Tx, cidBytes []byte, pub Pub) error {
+	row := tx.QueryRow(
+		"SELECT id FROM namespaces WHERE name = $1", pub.Namespace)
+	var nsID int
+	if err := row.Scan(&nsID); err != nil {
+		return errors.Wrap(err, "error while querying namespace")
+	}
+
 	_, err := tx.Exec(
-		"Insert into deals (cid, relation) values($1, $2)",
-		cidBytes, relName)
+		"Insert into deals (ns_id, cid, relation) values($1, $2, $3)",
+		nsID, cidBytes, pub.Relation)
 	if err != nil {
 		return errors.Wrap(err, "updating record")
 	}
@@ -52,12 +59,32 @@ func NewDB(conn string) (*DBClient, error) {
 	}, nil
 }
 
-func (db *DBClient) extractPubName(filename string) (string, error) {
-	parts := strings.Split(filename, "-")
-	if len(parts) < 2 {
-		return "", fmt.Errorf("invalid filename")
+// Pub represents a ns and table/relation name.
+type Pub struct {
+	Namespace string
+	Relation  string
+}
+
+func (db *DBClient) extractPubName(filename string) (Pub, error) {
+	filenameParts := strings.Split(filename, "-")
+	if len(filenameParts) < 2 {
+		return Pub{}, fmt.Errorf("invalid filename")
 	}
-	return parts[len(parts)-2], nil
+
+	// parts[0] is the database name, which we don't need
+	// parts[1:len(parts)-1] is the represents namespace
+	// parts[len(parts)-1] is the table/relation name
+	parts := strings.Split(filenameParts[len(filenameParts)-2], ".")
+	if len(parts) < 3 {
+		return Pub{}, fmt.Errorf("invalid schema or table name")
+	}
+
+	partsLen := len(parts)
+	Pub := Pub{
+		Namespace: strings.Join(parts[1:partsLen-1], "."),
+		Relation:  parts[partsLen-1],
+	}
+	return Pub, nil
 }
 
 // CreateJob creates a new job in the DB.
@@ -72,6 +99,7 @@ func (db *DBClient) CreateJob(ctx context.Context, cidStr string, fname string) 
 		ReadOnly:  false,
 	}
 
+	// Extract the schema and table name from the file name.
 	pub, err := db.extractPubName(fname)
 	if err != nil {
 		return fmt.Errorf("failed to extract table name: %v", err)
@@ -81,7 +109,7 @@ func (db *DBClient) CreateJob(ctx context.Context, cidStr string, fname string) 
 		return createJobTx(tx, cid.Bytes(), pub)
 	})
 	if err != nil {
-		return fmt.Errorf("failed to execute transaction: %v", err)
+		return fmt.Errorf("failed to create new job: %v", err)
 	}
 
 	return nil
@@ -97,7 +125,7 @@ type UnfinihedJobs struct {
 // UnfinishedJobs returns all unfinished jobs.
 func (db *DBClient) UnfinishedJobs(ctx context.Context) ([]UnfinihedJobs, error) {
 	rows, err := db.DB.QueryContext(ctx,
-		"SELECT namespaces.name, deals.cid FROM namespaces, deals WHERE namespaces.id = deals.ns_id and activated is NULL")
+		"SELECT namespaces.name, deals.cid, deals.relation FROM namespaces, deals WHERE namespaces.id = deals.ns_id and activated is NULL")
 	if err != nil {
 		return nil, fmt.Errorf("failed to query unfinished jobs: %v", err)
 	}
@@ -112,11 +140,12 @@ func (db *DBClient) UnfinishedJobs(ctx context.Context) ([]UnfinihedJobs, error)
 	for rows.Next() {
 		var cid []byte
 		var nsName string
-		if err := rows.Scan(&nsName, &cid); err != nil {
+		var relation string
+		if err := rows.Scan(&nsName, &cid, &relation); err != nil {
 			return nil, fmt.Errorf("failed to scan row: %v", err)
 		}
 		result = append(result, UnfinihedJobs{
-			Pub: nsName,
+			Pub: fmt.Sprintf("%s.%s", nsName, relation),
 			Cid: cid,
 		})
 	}

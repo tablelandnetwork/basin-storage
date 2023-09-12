@@ -51,7 +51,6 @@ func NewFileUploader(ctx context.Context, eventData []byte, cfg *UploaderConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize cockroachdb client: %v", err)
 	}
-	// defer dbClient.DB.Close()
 
 	u := &FileUploader{
 		StorageClient: storageClient,

@@ -84,7 +84,6 @@ func NewStatusChecker(ctx context.Context, cfg *StatusCheckerConfig) (*StatusChe
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize db client: %v", err)
 	}
-	// defer dbClient.DB.Close()
 
 	return &StatusChecker{
 		StatusClient:   w3sClient,

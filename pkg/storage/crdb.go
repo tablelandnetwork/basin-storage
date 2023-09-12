@@ -124,8 +124,12 @@ type UnfinihedJobs struct {
 
 // UnfinishedJobs returns all unfinished jobs.
 func (db *DBClient) UnfinishedJobs(ctx context.Context) ([]UnfinihedJobs, error) {
-	rows, err := db.DB.QueryContext(ctx,
-		"SELECT namespaces.name, deals.cid, deals.relation FROM namespaces, deals WHERE namespaces.id = deals.ns_id and activated is NULL")
+	query := `
+		SELECT namespaces.name, deals.cid, deals.relation
+		FROM namespaces, deals
+		WHERE namespaces.id = deals.ns_id and activated is NULL
+	`
+	rows, err := db.DB.QueryContext(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query unfinished jobs: %v", err)
 	}

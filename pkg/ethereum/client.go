@@ -171,7 +171,6 @@ func (c *Client) AddDeals(ctx context.Context,
 			return fmt.Errorf("failed to get tx receipt: %v", err)
 		}
 		fmt.Printf("got tx receipt: %v \n", receipt)
-
 	}
 
 	return nil

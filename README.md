@@ -66,14 +66,14 @@ The checker function can be triggered by simply sending a POST request for examp
 ## Deploying Function
 
 
-#### Create Uploader function
+#### Deploy Uploader function
 ```bash
-make uploader-create
+make uploader-deploy
 ```
 
-#### Create Status Checker function
+#### Deploy Status Checker function
 ```bash
-make uploader-create
+make uploader-deploy
 ```
 
 #### Update Status Checker function

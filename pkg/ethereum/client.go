@@ -150,9 +150,7 @@ func (c *Client) AddDeals(ctx context.Context,
 		if _, ok := recentDeals[d]; !ok {
 			dealsToAdd = append(dealsToAdd, d)
 		} else {
-			dealsToAdd = append(dealsToAdd, d)
-			// TODO: remove this^ and uncomment the following
-			// fmt.Println("deal already exists, skipping", d.Id, d.SelectorPath)
+			fmt.Println("deal already exists, skipping", d.Id, d.SelectorPath)
 		}
 	}
 
@@ -162,9 +160,7 @@ func (c *Client) AddDeals(ctx context.Context,
 		if err != nil {
 			return fmt.Errorf("failed to add deals: %v", err)
 		}
-
 		fmt.Printf("tx sent: %v \n", tx.Hash())
-		// TODO: move inside a goroutine
 		time.Sleep(150 * time.Second)
 		receipt, err := c.rpcBackend.TransactionReceipt(ctx, tx.Hash())
 		if err != nil {

@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"golang.org/x/sync/errgroup"
+
 	"github.com/ipfs/go-cid"
 	"github.com/tablelandnetwork/basin-storage/pkg/ethereum"
 	"github.com/textileio/go-tableland/pkg/wallet"
@@ -116,6 +118,51 @@ func (sc *StatusChecker) findEarliestDeal(deals []w3s.Deal) w3s.Deal {
 	return earliestDeal
 }
 
+func (sc *StatusChecker) processJob(ctx context.Context, job UnfinihedJob) error {
+	fmt.Printf("checking status for job: %s, %x\n", job.Pub, job.Cid)
+	status, err := sc.getStatus(ctx, job.Cid)
+	if err != nil {
+		return fmt.Errorf("failed to get status: %v", err)
+	}
+
+	if len(status.Deals) == 0 {
+		fmt.Printf("no deals found for job, skipping: %s, %x \n", job.Pub, job.Cid)
+		return nil
+	}
+
+	deals := []ethereum.BasinStorageDealInfo{}
+	for _, d := range status.Deals {
+		// filter out deals that are not active yet
+		if d.Status == w3s.DealStatusActive {
+			deals = append(deals, ethereum.BasinStorageDealInfo{
+				Id:           d.DealID,
+				SelectorPath: d.DataModelSelector,
+			})
+		}
+	}
+
+	if len(deals) == 0 {
+		fmt.Printf(
+			"exitsing deals for the job are not activated, skipping: %s, %x \n",
+			job.Pub, job.Cid)
+		return nil
+	}
+
+	// Add deals to the BasinStorage contract
+	if err = sc.contractClient.AddDeals(ctx, job.Pub, deals); err != nil {
+		return fmt.Errorf("failed to add deals to contract: %v", err)
+	}
+
+	// Update job status in DB
+	firstDealTS := sc.findEarliestDeal(status.Deals).Activation
+	if err = sc.DBClient.UpdateJobStatus(ctx, job.Cid, firstDealTS); err != nil {
+		return fmt.Errorf("failed to update job status: %v", err)
+	}
+
+	fmt.Printf("finished updating status for job: %s, %x \n", job.Pub, job.Cid)
+	return nil
+}
+
 // ProcessJobs checks the status of all unfinished jobs.
 // If a job has deals, it adds the deals to the BasinStorage contract.
 // If a job has no deals, it does nothing.
@@ -127,40 +174,19 @@ func (sc *StatusChecker) ProcessJobs(ctx context.Context) error {
 		return fmt.Errorf("failed to get unfinished jobs: %v", err)
 	}
 
-	// Todo: make this concurrent since each job is independent
+	// asnychronously process unfinished jobs
+	errs, ctx := errgroup.WithContext(ctx)
 	for _, job := range unfinihedJobs {
-		fmt.Println("checking status for job:", job.Pub, job.Cid)
-		status, err := sc.getStatus(ctx, job.Cid)
-		if err != nil {
-			return fmt.Errorf("failed to get status: %v", err)
-		}
-
-		if len(status.Deals) > 0 {
-			deals := []ethereum.BasinStorageDealInfo{}
-			for _, d := range status.Deals {
-				deals = append(deals, ethereum.BasinStorageDealInfo{
-					Id:           d.DealID,
-					SelectorPath: d.DataModelSelector,
-				})
-			}
-
-			// Add deals to the BasinStorage contract
-			err := sc.contractClient.AddDeals(ctx, job.Pub, deals)
-			if err != nil {
-				return fmt.Errorf("failed to add deals to contract: %v", err)
-			}
-
-			// Update job status in DB
-			err = sc.DBClient.UpdateJobStatus(
-				ctx, job.Cid, sc.findEarliestDeal(status.Deals).Activation,
-			)
-			if err != nil {
-				fmt.Println("failed to update job status:", err)
-				return fmt.Errorf("failed to update job status: %v", err)
-			}
-		} else {
-			fmt.Printf("no deals found for job, skipping: %s, %x \n", job.Pub, job.Cid)
-		}
+		ctx := ctx
+		job := job
+		errs.Go(func() error {
+			return sc.processJob(ctx, job)
+		})
 	}
+
+	if err := errs.Wait(); err != nil {
+		return fmt.Errorf("one or more jobs failed: %v", err)
+	}
+
 	return nil
 }

@@ -71,9 +71,8 @@ func StatusChecker(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = sc.ProcessJobs(ctx)
-	if err != nil {
-		errMsg := fmt.Sprintf("failed to process job: %v", err)
+	if err = sc.ProcessJobs(ctx); err != nil {
+		errMsg := fmt.Sprintf("failed to process jobs: %v", err)
 		fmt.Println(errMsg) // todo: enbale proper logging
 		http.Error(w, errMsg, http.StatusInternalServerError)
 		return

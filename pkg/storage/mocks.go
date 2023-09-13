@@ -45,7 +45,7 @@ func (m *mockW3sClient) PutCar(_ context.Context, _ io.Reader) (cid.Cid, error) 
 	return cid.Cid{}, nil
 }
 
-// mock deals that are active on chain and in db
+// mock deals that are active on chain and in db.
 var activeDealsJob1 = []w3s.Deal{
 	{
 		Activation:        time.Date(2021, time.January, 1, 0, 0, 0, 0, time.UTC),
@@ -61,8 +61,7 @@ var activeDealsJob1 = []w3s.Deal{
 	},
 }
 
-// mock deals that are active on chain but not in db
-// (status checking job has not run yet)
+// mock deals that are active on chain but not in db.
 var activeDealsJob2 = []w3s.Deal{
 	{
 		Activation:        time.Date(2021, time.January, 5, 3, 0, 0, 0, time.UTC),
@@ -78,7 +77,7 @@ var activeDealsJob2 = []w3s.Deal{
 	},
 }
 
-// mock deals that are not active on chain
+// mock deals that are not active on chain.
 var inactiveDealsJob3 = []w3s.Deal{
 	{
 		Activation:        time.Date(2021, time.January, 7, 4, 0, 0, 0, time.UTC),
@@ -127,10 +126,12 @@ func (m *mockW3sClient) Pin(_ context.Context, _ cid.Cid, _ ...w3s.PinOption) (*
 	return nil, nil
 }
 
+// MockReadCloser is a mock type for crdb.DBClient.
 type MockReadCloser struct {
 	*bytes.Reader
 }
 
+// Close is a mock implementation of io.Closer.
 func (mrc *MockReadCloser) Close() error {
 	return nil
 }
@@ -170,11 +171,12 @@ func (m *mockCrdb) UpdateJobStatus(_ context.Context, cid []byte, activation tim
 	return nil
 }
 
-// Mock interface for BasinStorage Contract.
+// MockBasinStorage is the mock type for BasinStorage Contract.
 type MockBasinStorage struct {
 	deals []ethereum.BasinStorageDealInfo
 }
 
+// EstimateGas is a mock implementation of BasinStorage.EstimateGas.
 func (c *MockBasinStorage) EstimateGas(
 	_ context.Context,
 	_ *bind.TransactOpts,
@@ -184,12 +186,14 @@ func (c *MockBasinStorage) EstimateGas(
 	return &bind.TransactOpts{}, nil
 }
 
+// GetRecentDeals is a mock implementation of BasinStorage.GetRecentDeals.
 func (c *MockBasinStorage) GetRecentDeals(
 	_ context.Context, _ string,
 ) (map[ethereum.BasinStorageDealInfo]struct{}, error) {
 	return nil, nil
 }
 
+// AddDeals is a mock implementation of BasinStorage.AddDeals.
 func (c *MockBasinStorage) AddDeals(
 	_ context.Context,
 	_ string,

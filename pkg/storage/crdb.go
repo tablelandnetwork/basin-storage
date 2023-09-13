@@ -25,7 +25,7 @@ func createJobTx(tx *sql.Tx, cidBytes []byte, pub Pub) error {
 	}
 
 	_, err := tx.Exec(
-		"Insert into deals (ns_id, cid, relation) values($1, $2, $3)",
+		"Insert into jobs (ns_id, cid, relation) values($1, $2, $3)",
 		nsID, cidBytes, pub.Relation)
 	if err != nil {
 		return errors.Wrap(err, "updating record")
@@ -125,9 +125,9 @@ type UnfinihedJobs struct {
 // UnfinishedJobs returns all unfinished jobs.
 func (db *DBClient) UnfinishedJobs(ctx context.Context) ([]UnfinihedJobs, error) {
 	query := `
-		SELECT namespaces.name, deals.cid, deals.relation
-		FROM namespaces, deals
-		WHERE namespaces.id = deals.ns_id and activated is NULL
+		SELECT namespaces.name, jobs.cid, jobs.relation
+		FROM namespaces, jobs
+		WHERE namespaces.id = jobs.ns_id and activated is NULL
 	`
 	rows, err := db.DB.QueryContext(ctx, query)
 	if err != nil {
@@ -160,7 +160,7 @@ func (db *DBClient) UnfinishedJobs(ctx context.Context) ([]UnfinihedJobs, error)
 // UpdateJobStatus updates the job status in the DB.
 func (db *DBClient) UpdateJobStatus(ctx context.Context, cid []byte, activation time.Time) error {
 	_, err := db.DB.ExecContext(ctx,
-		"UPDATE deals SET activated = $1 WHERE cid = $2",
+		"UPDATE jobs SET activated = $1 WHERE cid = $2",
 		activation, cid,
 	)
 	if err != nil {

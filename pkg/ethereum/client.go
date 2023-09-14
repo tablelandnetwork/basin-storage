@@ -16,12 +16,14 @@ import (
 
 // BasinStorage is an interface that defines the methods to interact with the BasinStorage smart contract.
 type BasinStorage interface {
-	EstimateGas(
-		ctx context.Context,
-		txOpts *bind.TransactOpts,
-		pub string, deals []BasinStorageDealInfo) (*bind.TransactOpts, error)
-	GetRecentDeals(ctx context.Context, pub string) (map[BasinStorageDealInfo]struct{}, error)
-	AddDeals(ctx context.Context, pub string, deals []BasinStorageDealInfo) error
+	EstimateGas(ctx context.Context,
+		pub string,
+		deals []BasinStorageDealInfo) (*bind.TransactOpts, error)
+	GetRecentDeals(ctx context.Context,
+		pub string) (map[uint64]BasinStorageDealInfo, error)
+	AddDeals(ctx context.Context,
+		pub string,
+		deals []BasinStorageDealInfo, txOpts *bind.TransactOpts) error
 }
 
 // Client is the Ethereum implementation of the registry client.
@@ -59,10 +61,17 @@ func NewClient(
 // EstimateGas estimates the gas required to execute the AddDeals function of the BasinStorage smart contract.
 func (c *Client) EstimateGas(
 	ctx context.Context,
-	txOpts *bind.TransactOpts,
 	pub string,
 	deals []BasinStorageDealInfo,
 ) (*bind.TransactOpts, error) {
+	txOpts, err := bind.NewKeyedTransactorWithChainID(
+		c.wallet.PrivateKey(),
+		big.NewInt(int64(c.chainID)),
+	)
+	if err != nil {
+		return &bind.TransactOpts{}, fmt.Errorf("failed to initialize tx opts: %v", err)
+	}
+
 	gasTipCap, err := c.backend.SuggestGasTipCap(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed while suggesting gas tip cap: %v", err)
@@ -97,7 +106,7 @@ func (c *Client) EstimateGas(
 }
 
 // GetRecentDeals returns the latest 10 deals added to the BasinStorage smart contract for the given publisher.
-func (c *Client) GetRecentDeals(ctx context.Context, pub string) (map[BasinStorageDealInfo]struct{}, error) {
+func (c *Client) GetRecentDeals(ctx context.Context, pub string) (map[uint64]BasinStorageDealInfo, error) {
 	callOpts := &bind.CallOpts{
 		Pending: true,
 		Context: ctx,
@@ -108,10 +117,9 @@ func (c *Client) GetRecentDeals(ctx context.Context, pub string) (map[BasinStora
 	}
 
 	// index recent deals in a map
-	recentDeals := make(map[BasinStorageDealInfo]struct{})
+	recentDeals := make(map[uint64]BasinStorageDealInfo)
 	for _, d := range latestDeals {
-		fmt.Println("latest N deals", d.Id, d.SelectorPath)
-		recentDeals[d] = struct{}{}
+		recentDeals[d.Id] = d
 	}
 
 	return recentDeals, nil
@@ -121,53 +129,20 @@ func (c *Client) GetRecentDeals(ctx context.Context, pub string) (map[BasinStora
 func (c *Client) AddDeals(ctx context.Context,
 	pub string,
 	deals []BasinStorageDealInfo,
+	txOpts *bind.TransactOpts,
 ) error {
-	// initialize tx opts
-	txOpts, err := bind.NewKeyedTransactorWithChainID(
-		c.wallet.PrivateKey(),
-		big.NewInt(int64(c.chainID)),
-	)
+	// TODO: implement retry logic
+	tx, err := c.contract.AddDeals(txOpts, pub, deals)
 	if err != nil {
-		return fmt.Errorf("failed to initialize tx opts: %v", err)
+		return fmt.Errorf("failed to add deals: %v", err)
 	}
-
-	// prepare tx opts with gas related params
-	txOpts, err = c.EstimateGas(ctx, txOpts, pub, deals)
+	fmt.Printf("tx sent: %v \n", tx.Hash())
+	time.Sleep(150 * time.Second)
+	receipt, err := c.rpcBackend.TransactionReceipt(ctx, tx.Hash())
 	if err != nil {
-		return fmt.Errorf("failed to estimate gas for adding deals: %v", err)
+		return fmt.Errorf("failed to get tx receipt: %v", err)
 	}
-
-	// filter out deals that are already in the contract
-	// due to db failure and retries, it may happen that deals are already added
-	// to avoid duplicates we filter out deals that are already in the contract
-	recentDeals, err := c.GetRecentDeals(ctx, pub)
-	if err != nil {
-		return fmt.Errorf("failed to get recent deals: %v", err)
-	}
-
-	dealsToAdd := []BasinStorageDealInfo{}
-	for _, d := range deals {
-		if _, ok := recentDeals[d]; !ok {
-			dealsToAdd = append(dealsToAdd, d)
-		} else {
-			fmt.Println("deal already exists, skipping", d.Id, d.SelectorPath)
-		}
-	}
-
-	if len(dealsToAdd) > 0 {
-		// TODO: implement retry logic
-		tx, err := c.contract.AddDeals(txOpts, pub, dealsToAdd)
-		if err != nil {
-			return fmt.Errorf("failed to add deals: %v", err)
-		}
-		fmt.Printf("tx sent: %v \n", tx.Hash())
-		time.Sleep(150 * time.Second)
-		receipt, err := c.rpcBackend.TransactionReceipt(ctx, tx.Hash())
-		if err != nil {
-			return fmt.Errorf("failed to get tx receipt: %v", err)
-		}
-		fmt.Printf("got tx receipt: %v \n", receipt)
-	}
+	fmt.Printf("got tx receipt: %v \n", receipt)
 
 	return nil
 }

@@ -98,7 +98,7 @@ func (m *mockW3sClient) Status(_ context.Context, cid cid.Cid) (*w3s.Status, err
 	cid1 := getCIDFromBytes([]byte("data for myfile"))
 	cid2 := getCIDFromBytes([]byte("data for myfile2"))
 
-	// job 1 // has active deals
+	// job 1 has active deals
 	if bytes.Equal(cid.Bytes(), cid1.Bytes()) {
 		deals = activeDealsJob1
 	} else if bytes.Equal(cid.Bytes(), cid2.Bytes()) {
@@ -140,8 +140,12 @@ type mockCrdb struct {
 	jobs []UnfinihedJob
 }
 
-func (m *mockCrdb) CreateJob(_ context.Context, cidStr string, pub string) error {
+func (m *mockCrdb) CreateJob(_ context.Context, cidStr string, fname string) error {
 	cid, _ := cid.Decode(cidStr)
+	pub, err := extractPub(fname)
+	if err != nil {
+		return err
+	}
 	m.jobs = append(m.jobs, UnfinihedJob{
 		Pub:       pub,
 		Cid:       cid.Bytes(),
@@ -179,7 +183,6 @@ type MockBasinStorage struct {
 // EstimateGas is a mock implementation of BasinStorage.EstimateGas.
 func (c *MockBasinStorage) EstimateGas(
 	_ context.Context,
-	_ *bind.TransactOpts,
 	_ string,
 	_ []ethereum.BasinStorageDealInfo,
 ) (*bind.TransactOpts, error) {
@@ -189,8 +192,21 @@ func (c *MockBasinStorage) EstimateGas(
 // GetRecentDeals is a mock implementation of BasinStorage.GetRecentDeals.
 func (c *MockBasinStorage) GetRecentDeals(
 	_ context.Context, _ string,
-) (map[ethereum.BasinStorageDealInfo]struct{}, error) {
-	return nil, nil
+) (map[uint64]ethereum.BasinStorageDealInfo, error) {
+	d1 := ethereum.BasinStorageDealInfo{
+		Id:           1,
+		SelectorPath: "foo/bar",
+	}
+	d2 := ethereum.BasinStorageDealInfo{
+		Id:           2,
+		SelectorPath: "foo/bar",
+	}
+	rds := map[uint64]ethereum.BasinStorageDealInfo{
+		d1.Id: d1,
+		d2.Id: d2,
+	}
+
+	return rds, nil
 }
 
 // AddDeals is a mock implementation of BasinStorage.AddDeals.
@@ -198,6 +214,7 @@ func (c *MockBasinStorage) AddDeals(
 	_ context.Context,
 	_ string,
 	deals []ethereum.BasinStorageDealInfo,
+	_ *bind.TransactOpts,
 ) error {
 	time.Sleep(1 * time.Second) // fake delay
 	c.deals = append(c.deals, deals...)

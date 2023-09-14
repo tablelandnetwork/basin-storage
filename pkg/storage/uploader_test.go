@@ -3,6 +3,7 @@ package storage
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io/fs"
 	"testing"
 
@@ -17,11 +18,12 @@ func TestUploader(t *testing.T) {
 	mockGCS := new(mocks.GCS)
 
 	// Mocking the returned values for the ParseEventData method
-	mockGCS.On("ParseEvent").Return("mybucket", "myfile", nil)
+	fname := "feeds_yyyy-mm-dd-000-111-1-2-00000000-basin_storage.employees.employees-2.parquet"
+	mockGCS.On("ParseEvent").Return("mybucket", fname, nil)
 
 	// Mocking the returned reader for the GetObjectReader method
 	mockReadCloser := &MockReadCloser{Reader: bytes.NewReader(mockData())}
-	mockGCS.On("GetObjectReader", ctx, "mybucket", "myfile").Return(mockReadCloser, nil)
+	mockGCS.On("GetObjectReader", ctx, "mybucket", fname).Return(mockReadCloser, nil)
 
 	uploader := FileUploader{
 		StorageClient: mockGCS,
@@ -44,7 +46,7 @@ func TestUploader(t *testing.T) {
 
 	fStat, err := files[0].Stat()
 	assert.NoError(t, err)
-	assert.Equal(t, "myfile", fStat.Name())
+	assert.Equal(t, fname, fStat.Name())
 	assert.Equal(t, int64(11), fStat.Size())
 
 	// Read the file contents that was send to (mocked) w3s
@@ -60,7 +62,9 @@ func TestUploader(t *testing.T) {
 	// Assert that the CID was added to the database with the correct pub name
 	db := uploader.DBClient.(*mockCrdb)
 	assert.Equal(t, 1, len(db.jobs))
-	assert.Equal(t, "myfile", db.jobs[0].Pub)
+	fmt.Println(db.jobs)
+	expectedPub := Pub{Namespace: "employees", Relation: "employees"}
+	assert.Equal(t, expectedPub, db.jobs[0].Pub)
 
 	cid, err := cid.Parse(db.jobs[0].Cid)
 	assert.NoError(t, err)

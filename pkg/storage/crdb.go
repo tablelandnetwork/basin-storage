@@ -65,7 +65,8 @@ type Pub struct {
 	Relation  string
 }
 
-func (db *DBClient) extractPubName(filename string) (Pub, error) {
+func extractPub(filename string) (Pub, error) {
+	fmt.Println("Extracting pub name from filename: ", filename)
 	filenameParts := strings.Split(filename, "-")
 	if len(filenameParts) < 2 {
 		return Pub{}, fmt.Errorf("invalid filename")
@@ -100,7 +101,7 @@ func (db *DBClient) CreateJob(ctx context.Context, cidStr string, fname string) 
 	}
 
 	// Extract the schema and table name from the file name.
-	pub, err := db.extractPubName(fname)
+	pub, err := extractPub(fname)
 	if err != nil {
 		return fmt.Errorf("failed to extract table name: %v", err)
 	}
@@ -117,7 +118,7 @@ func (db *DBClient) CreateJob(ctx context.Context, cidStr string, fname string) 
 
 // UnfinihedJob represents an unfinished job.
 type UnfinihedJob struct {
-	Pub       string
+	Pub       Pub
 	Cid       []byte
 	Activated time.Time
 }
@@ -149,7 +150,10 @@ func (db *DBClient) UnfinishedJobs(ctx context.Context) ([]UnfinihedJob, error) 
 			return nil, fmt.Errorf("failed to scan row: %v", err)
 		}
 		result = append(result, UnfinihedJob{
-			Pub: fmt.Sprintf("%s.%s", nsName, relation),
+			Pub: Pub{
+				Namespace: nsName,
+				Relation:  relation,
+			},
 			Cid: cid,
 		})
 	}

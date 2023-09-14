@@ -11,30 +11,28 @@ import (
 
 func TestStatusChecker(t *testing.T) {
 	ctx := context.Background()
-
 	bsc := &MockBasinStorage{
 		deals: []ethereum.BasinStorageDealInfo{},
 	}
 	db := &mockCrdb{
 		jobs: []UnfinihedJob{
 			{
-				Pub:       "myfile",
+				Pub:       Pub{Namespace: "testns", Relation: "testrel"},
 				Cid:       getCIDFromBytes([]byte("data for myfile")).Bytes(),
 				Activated: time.Date(2021, time.January, 1, 0, 0, 0, 0, time.UTC),
 			},
 			{
-				Pub:       "myfile2",
+				Pub:       Pub{Namespace: "testns2", Relation: "testrel2"},
 				Cid:       getCIDFromBytes([]byte("data for myfile2")).Bytes(),
 				Activated: time.Time{}, // not marked as active but deals are active on chain
 			},
 			{
-				Pub:       "myfile3",
+				Pub:       Pub{Namespace: "testns", Relation: "testrel3"},
 				Cid:       getCIDFromBytes([]byte("data for myfile3")).Bytes(),
 				Activated: time.Time{}, // not marked as active and deals are in queue
 			},
 		},
 	}
-
 	sc := StatusChecker{
 		StatusClient:   &mockW3sClient{},
 		DBClient:       db,
@@ -49,17 +47,17 @@ func TestStatusChecker(t *testing.T) {
 
 	var ts time.Time
 	for _, j := range db.jobs {
-		if j.Pub == "myfile" {
+		if j.Pub.Relation == "testrel" {
 			ts = time.Date(2021, time.January, 1, 0, 0, 0, 0, time.UTC)
 			assert.Equal(t, ts, j.Activated)
 		}
 
-		if j.Pub == "myfile2" {
+		if j.Pub.Relation == "restrel2" {
 			ts = time.Date(2021, time.January, 5, 3, 0, 0, 0, time.UTC)
 			assert.Equal(t, ts, j.Activated)
 		}
 
-		if j.Pub == "myfile3" {
+		if j.Pub.Relation == "testRel3" {
 			ts = time.Time{}
 			assert.Equal(t, ts, j.Activated)
 		}

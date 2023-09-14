@@ -31,7 +31,6 @@ uploader-deploy:
 	--trigger-event-filters="bucket=tableland-basin-staging"  \
 	--memory 8192MB \
 	--timeout 3600s \
-	--run-service-account basin-status-checker-gcf@textile-310716.iam.gserviceaccount.com \
 	--env-vars-file uploader.env.yml
 .PHONY: uploader-deploy
 

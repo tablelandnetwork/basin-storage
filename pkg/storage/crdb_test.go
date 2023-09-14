@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestExtractTableName(t *testing.T) {
+func TestExtractPub(t *testing.T) {
 	tests := []struct {
 		filename   string
 		expected   Pub
@@ -22,10 +22,8 @@ func TestExtractTableName(t *testing.T) {
 		},
 	}
 
-	crdbClient, _ := NewDB("")
-
 	for _, tt := range tests {
-		result, err := crdbClient.extractPubName(tt.filename)
+		result, err := extractPub(tt.filename)
 		if tt.shouldFail {
 			if err == nil {
 				t.Errorf("expected %s to fail, but it didn't", tt.filename)

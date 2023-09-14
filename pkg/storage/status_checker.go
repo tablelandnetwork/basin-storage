@@ -106,55 +106,64 @@ func (sc *StatusChecker) getStatus(ctx context.Context, CIDBytes []byte) (*w3s.S
 	return status, nil
 }
 
-func (sc *StatusChecker) findEarliestDeal(deals []w3s.Deal) w3s.Deal {
-	earliestDeal := deals[0]
-
-	for _, d := range deals {
-		if d.Activation.Before(earliestDeal.Activation) {
-			earliestDeal = d
-		}
-	}
-
-	return earliestDeal
-}
-
 func (sc *StatusChecker) processJob(ctx context.Context, job UnfinihedJob) error {
 	fmt.Printf("checking status for job: %s, %x\n", job.Pub, job.Cid)
+	pub := fmt.Sprintf("%s.%s", job.Pub.Namespace, job.Pub.Relation)
 	status, err := sc.getStatus(ctx, job.Cid)
 	if err != nil {
 		return fmt.Errorf("failed to get status: %v", err)
 	}
 
 	if len(status.Deals) == 0 {
-		fmt.Printf("no deals found for job, skipping: %s, %x \n", job.Pub, job.Cid)
-		return nil
-	}
-
-	deals := []ethereum.BasinStorageDealInfo{}
-	for _, d := range status.Deals {
-		// filter out deals that are not active yet
-		if d.Status == w3s.DealStatusActive {
-			deals = append(deals, ethereum.BasinStorageDealInfo{
-				Id:           d.DealID,
-				SelectorPath: d.DataModelSelector,
-			})
-		}
-	}
-
-	if len(deals) == 0 {
 		fmt.Printf(
-			"exitsing deals for the job are not activated, skipping: %s, %x \n",
+			"no deals found for job, skipping: %s, %x \n",
 			job.Pub, job.Cid)
 		return nil
 	}
 
-	// Add deals to the BasinStorage contract
-	if err = sc.contractClient.AddDeals(ctx, job.Pub, deals); err != nil {
+	deals := []ethereum.BasinStorageDealInfo{}
+	for _, d := range takeActiveDeals(status.Deals) {
+		// filter out deals that are not active yet
+		deals = append(deals, ethereum.BasinStorageDealInfo{
+			Id:           d.DealID,
+			SelectorPath: d.DataModelSelector,
+		})
+	}
+	if len(deals) == 0 {
+		fmt.Printf(
+			"skipping: deals exist, but are not activated: %s, %x \n",
+			pub, job.Cid)
+		return nil
+	}
+
+	// filter out deals that are already in the contract
+	// by looking at the recent deals.
+	// due to db failure and retries, it may happen that deals are already added
+	// to avoid duplicates we filter out deals that are already in the contract
+	recentDeals, err := sc.contractClient.GetRecentDeals(ctx, pub)
+	if err != nil {
+		return fmt.Errorf("failed to get recent deals: %v", err)
+	}
+
+	if deals = removeDuplicateDeals(recentDeals, deals); len(deals) == 0 {
+		fmt.Printf(
+			"skipping: all deals are already added: %s, %x \n",
+			pub, job.Cid)
+		return nil
+	}
+
+	// prepare tx opts with gas related params
+	txOpts, err := sc.contractClient.EstimateGas(ctx, pub, deals)
+	if err != nil {
+		return fmt.Errorf("failed to estimate gas for adding deals: %v", err)
+	}
+
+	if err = sc.contractClient.AddDeals(ctx, pub, deals, txOpts); err != nil {
 		return fmt.Errorf("failed to add deals to contract: %v", err)
 	}
 
 	// Update job status in DB
-	firstDealTS := sc.findEarliestDeal(status.Deals).Activation
+	firstDealTS := findEarliestDeal(status.Deals).Activation
 	if err = sc.DBClient.UpdateJobStatus(ctx, job.Cid, firstDealTS); err != nil {
 		return fmt.Errorf("failed to update job status: %v", err)
 	}
@@ -189,4 +198,46 @@ func (sc *StatusChecker) ProcessJobs(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func findEarliestDeal(deals []w3s.Deal) w3s.Deal {
+	earliestDeal := deals[0]
+
+	for _, d := range deals {
+		if d.Activation.Before(earliestDeal.Activation) {
+			earliestDeal = d
+		}
+	}
+
+	return earliestDeal
+}
+
+func takeActiveDeals(deals []w3s.Deal) []w3s.Deal {
+	activeDeals := []w3s.Deal{}
+
+	for _, d := range deals {
+		if d.Status == w3s.DealStatusActive {
+			activeDeals = append(activeDeals, d)
+		}
+	}
+
+	return activeDeals
+}
+
+func removeDuplicateDeals(
+	recentDeals map[uint64]ethereum.BasinStorageDealInfo,
+	deals []ethereum.BasinStorageDealInfo,
+) []ethereum.BasinStorageDealInfo {
+	deDupDeals := []ethereum.BasinStorageDealInfo{}
+	for _, d := range deals {
+		if _, ok := recentDeals[d.Id]; !ok {
+			deDupDeals = append(deDupDeals, d)
+		} else {
+			fmt.Println(
+				"deal already exists, skipping",
+				d.Id, d.SelectorPath)
+		}
+	}
+
+	return deDupDeals
 }

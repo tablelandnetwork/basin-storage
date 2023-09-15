@@ -31,7 +31,7 @@ func TestUploader(t *testing.T) {
 			Files: []fs.File{},
 		},
 		DBClient: &mockCrdb{
-			jobs: []UnfinihedJob{},
+			jobs: []UnfinishedJob{},
 		},
 	}
 

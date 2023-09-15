@@ -106,7 +106,7 @@ func (sc *StatusChecker) getStatus(ctx context.Context, CIDBytes []byte) (*w3s.S
 	return status, nil
 }
 
-func (sc *StatusChecker) processJob(ctx context.Context, job UnfinihedJob) error {
+func (sc *StatusChecker) processJob(ctx context.Context, job UnfinishedJob) error {
 	fmt.Printf("checking status for job: %s, %x\n", job.Pub, job.Cid)
 	pub := fmt.Sprintf("%s.%s", job.Pub.Namespace, job.Pub.Relation)
 	status, err := sc.getStatus(ctx, job.Cid)

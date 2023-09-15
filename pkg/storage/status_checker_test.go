@@ -15,7 +15,7 @@ func TestStatusChecker(t *testing.T) {
 		deals: []ethereum.BasinStorageDealInfo{},
 	}
 	db := &mockCrdb{
-		jobs: []UnfinihedJob{
+		jobs: []UnfinishedJob{
 			{
 				Pub:       Pub{Namespace: "testns", Relation: "testrel"},
 				Cid:       getCIDFromBytes([]byte("data for myfile")).Bytes(),

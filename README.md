@@ -71,16 +71,10 @@ The checker function can be triggered by simply sending a POST request for examp
 make uploader-deploy
 ```
 
-### Deploy Status Checker function
+#### Deploy Status Checker function
 
 ```bash
-make uploader-deploy
-```
-
-#### Update Status Checker function
-
-```bash
-make checker-update
+make checker-deploy
 ```
 
 ## Run tests

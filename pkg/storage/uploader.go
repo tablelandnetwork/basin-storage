@@ -10,7 +10,7 @@ import (
 	w3s "github.com/web3-storage/go-w3s-client"
 )
 
-// FileUploader dowload a file form GCS and uploads to web3.storage.
+// FileUploader download a file from GCS and uploads to web3.storage.
 type FileUploader struct {
 	StorageClient GCS        // StorageClient is a GCS instance used to interact with GCS.
 	DealClient    w3s.Client // DealClient is a w3s.Client instance used to interact with W3S.

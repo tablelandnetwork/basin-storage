@@ -37,7 +37,7 @@ func createJobTx(tx *sql.Tx, cidBytes []byte, pub Pub) error {
 // Crdb is an interface that defines the methods to interact with CockroachDB.
 type Crdb interface {
 	CreateJob(ctx context.Context, cidStr string, fileName string) error
-	UnfinishedJobs(ctx context.Context) ([]UnfinihedJob, error)
+	UnfinishedJobs(ctx context.Context) ([]UnfinishedJob, error)
 	UpdateJobStatus(ctx context.Context, cid []byte, activation time.Time) error
 }
 
@@ -116,15 +116,16 @@ func (db *DBClient) CreateJob(ctx context.Context, cidStr string, fname string) 
 	return nil
 }
 
-// UnfinihedJob represents an unfinished job.
-type UnfinihedJob struct {
+// UnfinishedJob represents a job in db where
+// corresponding deals are still inactive.
+type UnfinishedJob struct {
 	Pub       Pub
 	Cid       []byte
 	Activated time.Time
 }
 
-// UnfinishedJobs returns all unfinished jobs.
-func (db *DBClient) UnfinishedJobs(ctx context.Context) ([]UnfinihedJob, error) {
+// UnfinishedJobs returns all currently unfinished jobs in the db.
+func (db *DBClient) UnfinishedJobs(ctx context.Context) ([]UnfinishedJob, error) {
 	query := `
 		SELECT namespaces.name, jobs.cid, jobs.relation
 		FROM namespaces, jobs
@@ -141,7 +142,7 @@ func (db *DBClient) UnfinishedJobs(ctx context.Context) ([]UnfinihedJob, error) 
 		}
 	}()
 
-	var result []UnfinihedJob
+	var result []UnfinishedJob
 	for rows.Next() {
 		var cid []byte
 		var nsName string
@@ -149,7 +150,7 @@ func (db *DBClient) UnfinishedJobs(ctx context.Context) ([]UnfinihedJob, error) 
 		if err := rows.Scan(&nsName, &cid, &relation); err != nil {
 			return nil, fmt.Errorf("failed to scan row: %v", err)
 		}
-		result = append(result, UnfinihedJob{
+		result = append(result, UnfinishedJob{
 			Pub: Pub{
 				Namespace: nsName,
 				Relation:  relation,

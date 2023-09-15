@@ -1,6 +1,6 @@
 # Lint
 lint:
-	go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.51.0 run
+	go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.54.2 run
 .PHONY: lint
 
 # Test
@@ -41,7 +41,7 @@ checker-local:
 checker-deploy:
 	gcloud functions deploy go-http-function \
   	--gen2 \
-	--region=us-central1 \
+	--region=us-east1 \
 	--runtime=go120 \
 	--source=. \
 	--entry-point=StatusChecker \

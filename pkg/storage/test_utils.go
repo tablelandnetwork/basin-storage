@@ -137,7 +137,7 @@ func (mrc *MockReadCloser) Close() error {
 }
 
 type mockCrdb struct {
-	jobs []UnfinihedJob
+	jobs []UnfinishedJob
 }
 
 func (m *mockCrdb) CreateJob(_ context.Context, cidStr string, fname string) error {
@@ -146,7 +146,7 @@ func (m *mockCrdb) CreateJob(_ context.Context, cidStr string, fname string) err
 	if err != nil {
 		return err
 	}
-	m.jobs = append(m.jobs, UnfinihedJob{
+	m.jobs = append(m.jobs, UnfinishedJob{
 		Pub:       pub,
 		Cid:       cid.Bytes(),
 		Activated: time.Time{},
@@ -154,9 +154,9 @@ func (m *mockCrdb) CreateJob(_ context.Context, cidStr string, fname string) err
 	return nil
 }
 
-func (m *mockCrdb) UnfinishedJobs(_ context.Context) ([]UnfinihedJob, error) {
+func (m *mockCrdb) UnfinishedJobs(_ context.Context) ([]UnfinishedJob, error) {
 	var t time.Time
-	ufj := []UnfinihedJob{}
+	ufj := []UnfinishedJob{}
 	for _, job := range m.jobs {
 		if job.Activated == t {
 			ufj = append(ufj, job)

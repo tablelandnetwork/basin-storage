@@ -7,28 +7,23 @@ on:
   pull_request:
 
 concurrency:
-  group: test-${{github.ref}}
+  group: uploader-test-${{github.ref}}
   cancel-in-progress: true
 
 jobs:
   test:
-    name: test
+    name: uploader-test
     # Allow the job to fetch a GitHub ID token
     permissions:
       id-token: write
       contents: read
     runs-on: ubuntu-latest
-    env:
-      GCP_SA_KEY: ${{ secrets.GCP_CREDENTIALS }}
     steps:
       - name: Install Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.20
-
-      - name: Checkout code
-        uses: actions/checkout@v3
-
+          go-version: 1.20.8
+      - uses: actions/checkout@v2
       - name: Cache Go modules
         uses: actions/cache@v2
         with:

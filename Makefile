@@ -5,7 +5,7 @@ lint:
 
 # Test
 test: 
-	go test ./... -race -skip TestUploader
+	go test ./... -short -race
 .PHONY: test
 
 uploader-test:	

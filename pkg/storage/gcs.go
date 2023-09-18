@@ -22,6 +22,7 @@ type GCSClient struct {
 	EventData []byte
 }
 
+// NewGCSClient creates a new GCSClient.
 func NewGCSClient(ctx context.Context, data []byte) (*GCSClient, error) {
 	client, err := storage.NewClient(ctx)
 	if err != nil {
@@ -39,6 +40,7 @@ func (r *GCSClient) GetObjectReader(ctx context.Context, bucketName, objectName 
 	return r.Client.Bucket(bucketName).Object(objectName).NewReader(ctx)
 }
 
+// ParseEvent parses the CloudEvent data to get the bucket name and object path.
 func (r *GCSClient) ParseEvent() (string, string, error) {
 	var data storagedata.StorageObjectData
 	if err := protojson.Unmarshal(r.EventData, &data); err != nil {

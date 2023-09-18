@@ -12,3 +12,6 @@ docs/
 
 # Dotenv file
 .env
+uploader.env.yml
+checker.env.yml
+

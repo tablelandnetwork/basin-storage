@@ -10,13 +10,13 @@ contract BasinStorageScript is Script {
 
     function run() public {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        address deployerAddress = vm.addr(deployerPrivateKey);
         vm.startBroadcast(deployerPrivateKey);
 
         BasinStorage basinStorage = new BasinStorage();
-        basinStorage.grantRole(basinStorage.PUB_ADMIN_ROLE(), address(this));
 
-        // todo grant INDEXER_ROLE to other accounts
-        console2.log("deployer addr:", address(this));
+        // TODO: grant INDEXER_ROLE to other accounts
+        basinStorage.grantRole(basinStorage.PUB_ADMIN_ROLE(), deployerAddress);
 
         vm.stopBroadcast();
     }

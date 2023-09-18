@@ -3,5 +3,6 @@ src = "src"
 out = "out"
 libs = ["lib"]
 solc_version = "0.8.21"
+extra-output-files = ["abi", "bin"]
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config

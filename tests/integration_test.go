@@ -129,9 +129,6 @@ func buildUplaodRequest(t *testing.T, bucketName, objectName string) *http.Reque
 }
 
 func TestUploader(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping test in short mode")
-	}
 	w3sToken := os.Getenv("WEB3STORAGE_TOKEN")
 	dbHost := os.Getenv("CRDB_HOST")
 	crdbConn := fmt.Sprintf(
@@ -226,7 +223,7 @@ func TestUploader(t *testing.T) {
 		})
 	}
 	defer func() {
-		require.Error(t, rows.Close())
+		require.NoError(t, rows.Close())
 	}()
 
 	assert.Equal(t, 1, len(results))

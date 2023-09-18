@@ -64,7 +64,7 @@ jobs:
           service_account: "basin-gha-ci@textile-310716.iam.gserviceaccount.com"
 
       - name: Test
-        run: go test -timeout 30s -run ^TestUploader$ github.com/tablelandnetwork/basin-storage/tests
+        run: make uploader-test
         env:
           WEB3STORAGE_TOKEN: ${{ secrets.WEB3STORAGE_TOKEN }}
           CRDB_HOST: localhost:26257

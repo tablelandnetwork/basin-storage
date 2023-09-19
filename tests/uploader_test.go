@@ -77,7 +77,7 @@ func SetupDB(t *testing.T, db *sql.DB) {
 	)`)
 	require.NoError(t, err)
 
-	_, err = db.Exec("INSERT INTO namespaces (name, owner) VALUES ('test_name', 'test_owner')")
+	_, err = db.Exec("INSERT INTO namespaces (name, owner) VALUES ('esfbmltndstj', 'test_owner')")
 	require.NoError(t, err)
 
 	_, err = db.Exec(
@@ -163,8 +163,9 @@ func TestUploader(t *testing.T) {
 
 	// Upload random bytes to GCS for testing
 	bucketName := "tableland-entrypoint"
-	objectName := "01234-012345-1-2-00000000-basin_storage.test_name.data6-test.parquet"
-	size := 1 * 1024 * 1024 // 1MB
+	objectName := "esfbmltndstj/ksvraapqfiyf/export17860a3b03221a1b0000000000000001-n901064813195493377.0.parquet"
+	// 1MB
+	size := 1 * 1024 * 1024
 	data := make([]byte, size)
 	_, err = rand.Read(data)
 	require.NoError(t, err)
@@ -230,8 +231,8 @@ func TestUploader(t *testing.T) {
 	}()
 
 	assert.Equal(t, 1, len(results))
-	assert.Equal(t, "test_name", results[0].nsName)
-	assert.Equal(t, "data6", results[0].relName)
+	assert.Equal(t, "esfbmltndstj", results[0].nsName)
+	assert.Equal(t, "ksvraapqfiyf", results[0].relName)
 	assert.NotNil(t, results[0].cid)
 	assert.False(t, results[0].activated.Valid)
 }

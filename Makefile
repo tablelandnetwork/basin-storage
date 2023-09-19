@@ -8,8 +8,8 @@ test:
 	go test ./... -short -race
 .PHONY: test
 
-uploader-test:	
-	go test ./... -timeout 30s -run ^TestUploader$ 
+uploader-test:
+	go test ./... -timeout 30s -run ^TestUploader$
 .PHONY: uploader-test	
 
 mocks: clean-mocks

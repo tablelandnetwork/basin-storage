@@ -23,6 +23,8 @@ import (
 	handler "github.com/tablelandnetwork/basin-storage"
 )
 
+const functionsPort = "8293"
+
 func uploadRandomBytesToGCS(t *testing.T, data []byte, bucketName, objectName string) {
 	ctx := context.Background()
 
@@ -95,8 +97,8 @@ func SetupDB(t *testing.T, db *sql.DB) {
 	require.NoError(t, err)
 }
 
-func buildUplaodRequest(t *testing.T, bucketName, objectName string) *http.Request {
-	url := "http://localhost:8293"
+func buildUploadRequest(t *testing.T, bucketName, objectName string) *http.Request {
+	url := fmt.Sprintf("http://localhost:%s", functionsPort)
 	postData := fmt.Sprintf(
 		`{
 			"name": "%s",
@@ -158,7 +160,7 @@ func TestUploader(t *testing.T) {
 		require.NoError(t, err)
 		require.NoError(t, os.Setenv("W3S_TOKEN", w3sToken))
 		require.NoError(t, os.Setenv("CRDB_CONN_STRING", crdbConn))
-		require.NoError(t, funcframework.Start("8293"))
+		require.NoError(t, funcframework.Start(functionsPort))
 	}()
 
 	// Upload random bytes to GCS for testing
@@ -176,7 +178,7 @@ func TestUploader(t *testing.T) {
 	time.Sleep(3 * time.Second)
 
 	// Trigger the cloud function
-	req := buildUplaodRequest(t, bucketName, objectName)
+	req := buildUploadRequest(t, bucketName, objectName)
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	require.NoError(t, err)

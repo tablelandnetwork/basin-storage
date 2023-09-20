@@ -1,6 +1,6 @@
 # basin-storage
 
-[![Test](https://github.com/tablelandnetwork/basin-storage/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/tablelandnetwork/basin-storage/actions/workflows/test.yml)
+[![Test](https://github.com/tablelandnetwork/basin-storage/actions/workflows/unit-test.yml/badge.svg?branch=main)](https://github.com/tablelandnetwork/basin-storage/actions/workflows/unit-test.yml)
 [![License](https://img.shields.io/github/license/tablelandnetwork/basin-storage.svg)](./LICENSE)
 [![standard-readme compliant](https://img.shields.io/badge/standard--readme-OK-green.svg)](https://github.com/RichardLitt/standard-readme)
 

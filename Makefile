@@ -8,6 +8,10 @@ test:
 	go test ./... -short -race
 .PHONY: test
 
+uploader-test:
+	go test ./... -timeout 30s -run ^TestUploader$
+.PHONY: uploader-test	
+
 mocks: clean-mocks
 	go run github.com/vektra/mockery/v2@v2.14.0 --name=GCS --recursive --with-expecter
 .PHONY: mocks

@@ -67,25 +67,17 @@ type Pub struct {
 
 func extractPub(filename string) (Pub, error) {
 	fmt.Println("Extracting pub name from filename: ", filename)
-	filenameParts := strings.Split(filename, "-")
-	if len(filenameParts) < 2 {
+	parts := strings.Split(filename, "/")
+	if len(parts) < 3 {
 		return Pub{}, fmt.Errorf("invalid filename")
 	}
 
-	// parts[0] is the database name, which we don't need
-	// parts[1:len(parts)-1] is the represents namespace
-	// parts[len(parts)-1] is the table/relation name
-	parts := strings.Split(filenameParts[len(filenameParts)-2], ".")
-	if len(parts) < 3 {
-		return Pub{}, fmt.Errorf("invalid schema or table name")
-	}
-
-	partsLen := len(parts)
-	Pub := Pub{
-		Namespace: strings.Join(parts[1:partsLen-1], "."),
-		Relation:  parts[partsLen-1],
-	}
-	return Pub, nil
+	// parts[0] is the namespace
+	// parts[1] is the table/relation name
+	return Pub{
+		Namespace: parts[0],
+		Relation:  parts[1],
+	}, nil
 }
 
 // CreateJob creates a new job in the DB.

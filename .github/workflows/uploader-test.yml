@@ -1,0 +1,65 @@
+name: Uploader Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+concurrency:
+  group: uploader-test-${{github.ref}}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: uploader-test
+    # Allow the job to fetch a GitHub ID token
+    permissions:
+      id-token: write
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.20.8
+      - uses: actions/checkout@v2
+      - name: Cache Go modules
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+            ~/Library/Caches/go-build
+            %LocalAppData%\go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Install CockroachDB
+        run: |
+          sudo apt -y install tar wget
+          sudo mkdir -p /usr/local/lib/cockroach
+          wget https://binaries.cockroachdb.com/cockroach-v23.1.9.linux-amd64.tgz
+          tar -xzf cockroach-v23.1.9.linux-amd64.tgz
+          sudo cp -f cockroach-v23.1.9.linux-amd64/cockroach /usr/local/bin/
+          sudo chmod +x /usr/local/bin/cockroach
+          sudo cp -rf cockroach-v23.1.9.linux-amd64/lib/* /usr/local/lib/cockroach/
+        working-directory: /tmp
+
+      - name: Start CockroachDB
+        run: cockroach start-single-node --insecure --store=type=mem,size=0.25 --advertise-addr=localhost --background
+
+      - id: "auth"
+        name: "Authenticate to Google Cloud"
+        uses: "google-github-actions/auth@v1"
+        with:
+          create_credentials_file: true
+          workload_identity_provider: "projects/570261487950/locations/global/workloadIdentityPools/basin-gha/providers/github"
+          service_account: "basin-gha-ci@textile-310716.iam.gserviceaccount.com"
+
+      - name: Test
+        run: make uploader-test
+        env:
+          WEB3STORAGE_TOKEN: ${{ secrets.WEB3STORAGE_TOKEN }}
+          CRDB_HOST: localhost:26257

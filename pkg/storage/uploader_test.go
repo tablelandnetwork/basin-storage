@@ -18,7 +18,7 @@ func TestUploader(t *testing.T) {
 	mockGCS := new(mocks.GCS)
 
 	// Mocking the returned values for the ParseEventData method
-	fname := "feeds_yyyy-mm-dd-000-111-1-2-00000000-basin_storage.employees.employees-2.parquet"
+	fname := "foo.bar.baz/relname/exportabcd1234-2.0.parquet"
 	mockGCS.On("ParseEvent").Return("mybucket", fname, nil)
 
 	// Mocking the returned reader for the GetObjectReader method
@@ -63,7 +63,7 @@ func TestUploader(t *testing.T) {
 	db := uploader.DBClient.(*mockCrdb)
 	assert.Equal(t, 1, len(db.jobs))
 	fmt.Println(db.jobs)
-	expectedPub := Pub{Namespace: "employees", Relation: "employees"}
+	expectedPub := Pub{Namespace: "foo.bar.baz", Relation: "relname"}
 	assert.Equal(t, expectedPub, db.jobs[0].Pub)
 
 	cid, err := cid.Parse(db.jobs[0].Cid)

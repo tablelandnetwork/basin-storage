@@ -5,14 +5,15 @@ import (
 )
 
 func TestExtractPub(t *testing.T) {
+	filename := "esfbmltndstj/ksvraapqfiyf/export17860a3b03221a1b0000000000000001-n901064813195493377.0.parquet"
 	tests := []struct {
 		filename   string
 		expected   Pub
 		shouldFail bool
 	}{
 		{
-			filename:   "202309110419279721253170000000000-4edb10f3fc54c757-1-2-00000000-basin_staging.eddie.data6-1.parquet",
-			expected:   Pub{Namespace: "eddie", Relation: "data6"},
+			filename:   filename,
+			expected:   Pub{Namespace: "esfbmltndstj", Relation: "ksvraapqfiyf"},
 			shouldFail: false,
 		},
 		{

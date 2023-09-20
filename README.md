@@ -1,9 +1,10 @@
 # basin-storage
 
+[![Test](https://github.com/tablelandnetwork/basin-storage/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/tablelandnetwork/basin-storage/actions/workflows/test.yml)
 [![License](https://img.shields.io/github/license/tablelandnetwork/basin-storage.svg)](./LICENSE)
 [![standard-readme compliant](https://img.shields.io/badge/standard--readme-OK-green.svg)](https://github.com/RichardLitt/standard-readme)
 
-> Archive data on Filecoin network.
+> Filecoin storage and indexing for Tableland Basin
 
 # Table of Contents
 
@@ -26,7 +27,7 @@ Tableland Basin is a secure and verifiable open data platform. The Basin Storage
 
 Basin Storage leverages GCP Cloud Functions and Clould Storage to create a data archiving pipeline to Filecoin network. The File uploader function is triggered by an event from Cloud Storage.
 
-This repository includes a development server that acts an a event trigger during development.
+This repository includes a development server that acts as an event trigger during development.
 
 ## Running
 

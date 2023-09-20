@@ -13,7 +13,10 @@
 - [Background](#background)
 - [Development](#development)
   - [Running](#running)
-  - [Run tests](#run-tests)  
+  - [Deploying Function](#deploying-function)
+    - [Deploy Uploader function](#deploy-uploader-function)
+      - [Deploy Status Checker function](#deploy-status-checker-function)
+  - [Run tests](#run-tests)
 - [Contributing](#contributing)
 - [License](#license)
 

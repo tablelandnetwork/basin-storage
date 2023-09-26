@@ -61,5 +61,5 @@ checker-deploy:
 .PHONY: checker-deploy
 
 ethereum:
-	go run github.com/ethereum/go-ethereum/cmd/abigen@v1.12.0 --abi ./evm/basin_storage/out/BasinStorage.sol/BasinStorage.abi.json --bin ./evm/basin_storage/out/BasinStorage.sol/BasinStorage.bin --pkg ethereum --type Contract --out pkg/ethereum/contract.go
+	go run github.com/ethereum/go-ethereum/cmd/abigen@v1.12.2 --abi ./evm/basin_storage/out/BasinStorage.sol/BasinStorage.abi.json --bin ./evm/basin_storage/out/BasinStorage.sol/BasinStorage.bin --pkg ethereum --type Contract --out pkg/ethereum/contract.go
 .PHONY: ethereum	

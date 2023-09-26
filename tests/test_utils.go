@@ -63,7 +63,7 @@ func deleteObjectFromGCS(t *testing.T, bucketName, objectName string) {
 	require.NoError(t, err)
 }
 
-func SetupDB(t *testing.T, db *sql.DB) {
+func setupDB(t *testing.T, db *sql.DB) {
 	_, err := db.Exec("CREATE DATABASE IF NOT EXISTS basin_test")
 	require.NoError(t, err)
 

@@ -47,7 +47,7 @@ func TestChecker(t *testing.T) {
 	require.NoError(t, err)
 
 	// setup initial database state
-	SetupDB(t, db)
+	setupDB(t, db)
 
 	// insert a processed job
 	cid := insertProcessedJob(t, db)

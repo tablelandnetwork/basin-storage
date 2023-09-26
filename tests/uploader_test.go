@@ -67,7 +67,7 @@ func TestUploader(t *testing.T) {
 	// setup db for testing
 	db, err := sql.Open("postgres", crdbConn)
 	require.NoError(t, err)
-	SetupDB(t, db)
+	setupDB(t, db)
 	defer func() {
 		_, err := db.Exec("DROP DATABASE IF EXISTS basin_test")
 		require.NoError(t, err)

@@ -189,6 +189,13 @@ func (c *MockBasinStorage) EstimateGas(
 	return &bind.TransactOpts{}, nil
 }
 
+// GetPendingNonce is a mock implementation of BasinStorage.GetPendingNonce.
+func (c *MockBasinStorage) GetPendingNonce(
+	_ context.Context,
+) (uint64, error) {
+	return 0, nil
+}
+
 // GetRecentDeals is a mock implementation of BasinStorage.GetRecentDeals.
 func (c *MockBasinStorage) GetRecentDeals(
 	_ context.Context, _ string,

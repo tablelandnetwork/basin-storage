@@ -197,43 +197,29 @@ func (sc *StatusChecker) processJob(
 		return nil
 	}
 
-	// if simulated, skip dedeuplication attempt. just add deals
-	if sc.simulated {
-		fmt.Printf(
-			"simulated: adding deals: %s, %x \n",
-			pub, job.Cid)
-		if err := sc.addDeals(ctx, pub, deals, nonce); err != nil {
-			return fmt.Errorf("failed to add deals: %v", err)
-		}
-		if err := sc.updateJobStatus(ctx, job, status); err != nil {
-			return err
-		}
-	} else {
+	if !sc.simulated {
 		fmt.Printf(
 			"not simulated: checking for duplicates: %s, %x \n",
 			pub, job.Cid)
-
 		deals, err = sc.removeDuplicateDeals(ctx, pub, deals)
 		// Don't fail if we can't remove duplicates, log it
 		// and continue to add deals
 		if err != nil {
 			fmt.Println("failed to remove duplicates: ", err)
 		}
-		if len(deals) > 0 {
-			if err := sc.addDeals(ctx, pub, deals, nonce); err != nil {
-				return fmt.Errorf("failed to add deals: %v", err)
-			}
-		} else {
-			fmt.Printf(
-				"skipping: all deals are already indexed: %s, %x \n",
-				pub, job.Cid)
-		}
-		if err := sc.updateJobStatus(ctx, job, status); err != nil {
-			return err
-		}
 	}
 
-	return nil
+	if len(deals) > 0 {
+		if err := sc.addDeals(ctx, pub, deals, nonce); err != nil {
+			return fmt.Errorf("failed to add deals: %v", err)
+		}
+	} else {
+		fmt.Printf(
+			"skipping: all deals are already indexed: %s, %x \n",
+			pub, job.Cid)
+	}
+
+	return sc.updateJobStatus(ctx, job, status)
 }
 
 // ProcessJobs checks the status of all unfinished jobs.

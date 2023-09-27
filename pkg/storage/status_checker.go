@@ -228,7 +228,7 @@ func (sc *StatusChecker) processJob(
 // If a job has already been activated, it does nothing.
 // Finally, it updates the job status in the DB.
 func (sc *StatusChecker) ProcessJobs(ctx context.Context) error {
-	unfinihedJobs, err := sc.DBClient.UnfinishedJobs(ctx)
+	unfinishedJobs, err := sc.DBClient.UnfinishedJobs(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get unfinished jobs: %v", err)
 	}
@@ -240,7 +240,7 @@ func (sc *StatusChecker) ProcessJobs(ctx context.Context) error {
 	}
 
 	errs, ctx := errgroup.WithContext(ctx)
-	for idx, job := range unfinihedJobs {
+	for idx, job := range unfinishedJobs {
 		idx := idx
 		ctx := ctx
 		job := job

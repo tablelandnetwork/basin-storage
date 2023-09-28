@@ -64,7 +64,7 @@ var activeDealsJob1 = []w3s.Deal{
 // mock deals that are active on chain but not in db.
 var activeDealsJob2 = []w3s.Deal{
 	// same deal id as job1 but different cid and selector
-	// it may happend that two different files with differen CIDs
+	// it may happen that two different files with different CIDs
 	// gets added to the same deal.
 	{
 		Activation:        time.Date(2021, time.January, 5, 3, 0, 0, 0, time.UTC),

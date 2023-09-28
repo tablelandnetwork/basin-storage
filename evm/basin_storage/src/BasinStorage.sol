@@ -14,6 +14,7 @@ contract BasinStorage is AccessControl {
     struct DealInfo {
         uint64 id;
         string selectorPath;
+        string cid;
     }
 
     // Pub address by pub name
@@ -32,7 +33,8 @@ contract BasinStorage is AccessControl {
     event DealAdded(
         uint256 indexed dealId,
         string indexed pub,
-        address indexed owner
+        address indexed owner,
+        string cid
     );
 
     // Event to log when a pub is created
@@ -93,7 +95,7 @@ contract BasinStorage is AccessControl {
         for (uint256 i = 0; i < deals.length; i++) {
             _deals[pub][epoch].push(deals[i]);
             _pubDealCount[pub]++;
-            emit DealAdded(deals[i].id, pub, owner);
+            emit DealAdded(deals[i].id, pub, owner, deals[i].cid);
         }
     }
 

@@ -22,7 +22,7 @@ type BasinStorage interface {
 	) (*bind.TransactOpts, error)
 	GetPendingNonce(ctx context.Context) (uint64, error)
 	GetRecentDeals(ctx context.Context,
-		pub string) (map[uint64]BasinStorageDealInfo, error)
+		pub string) (map[string]BasinStorageDealInfo, error)
 	AddDeals(ctx context.Context,
 		pub string,
 		deals []BasinStorageDealInfo, txOpts *bind.TransactOpts) error
@@ -113,7 +113,7 @@ func (c *Client) GetPendingNonce(ctx context.Context) (uint64, error) {
 }
 
 // GetRecentDeals returns the latest 10 deals added to the BasinStorage smart contract for the given publisher.
-func (c *Client) GetRecentDeals(ctx context.Context, pub string) (map[uint64]BasinStorageDealInfo, error) {
+func (c *Client) GetRecentDeals(ctx context.Context, pub string) (map[string]BasinStorageDealInfo, error) {
 	callOpts := &bind.CallOpts{
 		Pending: true,
 		Context: ctx,
@@ -124,9 +124,9 @@ func (c *Client) GetRecentDeals(ctx context.Context, pub string) (map[uint64]Bas
 	}
 
 	// index recent deals in a map
-	recentDeals := make(map[uint64]BasinStorageDealInfo)
+	recentDeals := make(map[string]BasinStorageDealInfo)
 	for _, d := range latestDeals {
-		recentDeals[d.Id] = d
+		recentDeals[d.Cid] = d
 	}
 
 	return recentDeals, nil

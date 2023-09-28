@@ -63,9 +63,12 @@ var activeDealsJob1 = []w3s.Deal{
 
 // mock deals that are active on chain but not in db.
 var activeDealsJob2 = []w3s.Deal{
+	// same deal id as job1 but different cid and selector
+	// it may happend that two different files with differen CIDs
+	// gets added to the same deal.
 	{
 		Activation:        time.Date(2021, time.January, 5, 3, 0, 0, 0, time.UTC),
-		DealID:            3,
+		DealID:            1,
 		DataModelSelector: "bar/foo",
 		Status:            w3s.DealStatusActive,
 	},
@@ -199,18 +202,20 @@ func (c *MockBasinStorage) GetPendingNonce(
 // GetRecentDeals is a mock implementation of BasinStorage.GetRecentDeals.
 func (c *MockBasinStorage) GetRecentDeals(
 	_ context.Context, _ string,
-) (map[uint64]ethereum.BasinStorageDealInfo, error) {
+) (map[string]ethereum.BasinStorageDealInfo, error) {
 	d1 := ethereum.BasinStorageDealInfo{
 		Id:           1,
 		SelectorPath: "foo/bar",
+		Cid:          getCIDFromBytes([]byte("data for myfile")).String(),
 	}
 	d2 := ethereum.BasinStorageDealInfo{
 		Id:           2,
 		SelectorPath: "foo/bar",
+		Cid:          getCIDFromBytes([]byte("data for myfile")).String(),
 	}
-	rds := map[uint64]ethereum.BasinStorageDealInfo{
-		d1.Id: d1,
-		d2.Id: d2,
+	rds := map[string]ethereum.BasinStorageDealInfo{
+		d1.Cid: d1,
+		d2.Cid: d2,
 	}
 
 	return rds, nil

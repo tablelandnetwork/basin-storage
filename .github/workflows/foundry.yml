@@ -34,5 +34,5 @@ jobs:
 
       - name: Run Forge tests
         run: |
-          forge test --root evm/basin_storage -vvv
+          forge test --root evm/basin_storage -vvv --gas-report
         id: test

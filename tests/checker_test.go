@@ -1,65 +1,43 @@
 package tests
 
 import (
-	"bytes"
 	"context"
-	"crypto/rand"
 	"database/sql"
 	"fmt"
-	"io"
 	"net/http"
+	"net/url"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/GoogleCloudPlatform/functions-framework-go/funcframework"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	// Blank-import libpq package for SQL.
-	_ "github.com/lib/pq"
 	handler "github.com/tablelandnetwork/basin-storage"
 )
 
-func buildUploadRequest(t *testing.T, bucketName, objectName string) *http.Request {
-	url := fmt.Sprintf("http://localhost:%s", functionsPort)
-	postData := fmt.Sprintf(
-		`{
-			"name": "%s",
-			"bucket": "%s",
-			"contentType": "application/json",
-			"metageneration": "1",
-			"timeCreated": "2020-04-23T07:38:57.230Z",
-			"updated": "2020-04-23T07:38:57.230Z"
-		}`,
-		objectName,
-		bucketName,
-	)
-
-	data := []byte(postData)
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(data))
+func buildCheckerRequest(t *testing.T) *http.Request {
+	urlStr := fmt.Sprintf("http://localhost:%s", functionsPort)
+	data := url.Values{}
+	data.Set("simulated", "true")
+	req, err := http.NewRequest("POST", urlStr, strings.NewReader(data.Encode()))
 	require.NoError(t, err)
 
-	// Set headers
-	source := fmt.Sprintf(
-		"//storage.googleapis.com/projects/_/buckets/%s",
-		bucketName)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("ce-id", "1234567890")
-	req.Header.Set("ce-specversion", "1.0")
-	req.Header.Set("ce-type", "google.cloud.storage.object.v1.finalized")
-	req.Header.Set("ce-time", "2020-08-08T00:11:44.895529672Z")
-	req.Header.Set("ce-source", source)
-
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	return req
 }
 
-func TestUploader(t *testing.T) {
+func TestChecker(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
 	w3sToken := os.Getenv("WEB3STORAGE_TOKEN")
 	dbHost := os.Getenv("CRDB_HOST")
+	pk := os.Getenv("PRIVATE_KEY")
+	chainIDStr := os.Getenv("CHAIN_ID")
+	backendURL := "https://api.calibration.node.glif.io/rpc/v1"
+	basinStorageAddr := "0x4b1f4d8100e51afe644b189d77784dec225e0596"
 	crdbConn := fmt.Sprintf(
 		"postgresql://root@%s/basin_test?sslmode=disable",
 		dbHost)
@@ -67,61 +45,54 @@ func TestUploader(t *testing.T) {
 	// setup db for testing
 	db, err := sql.Open("postgres", crdbConn)
 	require.NoError(t, err)
+
+	// setup initial database state
 	setupDB(t, db)
+
+	// insert a processed job
+	cid := insertProcessedJob(t, db)
 	defer func() {
 		_, err := db.Exec("DROP DATABASE IF EXISTS basin_test")
 		require.NoError(t, err)
 		require.NoError(t, db.Close())
 	}()
 
+	// Create a pub in the smart contract if it doesn't exist
+	createPub(t, pk, chainIDStr, backendURL, basinStorageAddr)
+
 	// start the cloud function
 	go func() {
-		err := funcframework.RegisterCloudEventFunctionContext(
+		err := funcframework.RegisterHTTPFunctionContext(
 			context.Background(),
 			"/",
-			handler.Uploader,
+			handler.StatusChecker,
 		)
 		require.NoError(t, err)
 		require.NoError(t, os.Setenv("W3S_TOKEN", w3sToken))
 		require.NoError(t, os.Setenv("CRDB_CONN_STRING", crdbConn))
+		require.NoError(t, os.Setenv("PRIVATE_KEY", pk))
+		require.NoError(t, os.Setenv("CHAIN_ID", chainIDStr))
 		require.NoError(t, funcframework.Start(functionsPort))
 	}()
 
-	// Upload random bytes to GCS for testing
-	bucketName := "tableland-entrypoint"
-	objectName := "esfbmltndstj/ksvraapqfiyf/export17860a3b03221a1b0000000000000001-n901064813195493377.0.parquet"
-	// 1MB
-	size := 1 * 1024 * 1024
-	data := make([]byte, size)
-	_, err = rand.Read(data)
-	require.NoError(t, err)
-	uploadRandomBytesToGCS(t, data, bucketName, objectName)
-	defer deleteObjectFromGCS(t, bucketName, objectName)
+	time.Sleep(2 * time.Second)
 
-	// Wait for for test file to be uploaded to GCS
-	time.Sleep(3 * time.Second)
-
-	// Trigger the cloud function
-	req := buildUploadRequest(t, bucketName, objectName)
+	req := buildCheckerRequest(t)
 	client := &http.Client{}
 	resp, err := client.Do(req)
-	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, resp.Body.Close())
 	}()
-
-	_, err = io.ReadAll(resp.Body)
 	require.NoError(t, err)
-	// For example, check if the response status is 200 OK
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
-	// Read the database to check if the job was created
 	query := `
 		SELECT namespaces.name, jobs.cid, jobs.relation, jobs.activated
 		FROM namespaces, jobs
-		WHERE namespaces.id = jobs.ns_id and activated is NULL
+		WHERE namespaces.id = jobs.ns_id
+		AND jobs.cid = $1
 	`
-	rows, err := db.Query(query)
+	rows, err := db.Query(query, cid.Bytes())
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, rows.Close())
@@ -158,5 +129,7 @@ func TestUploader(t *testing.T) {
 	assert.Equal(t, "esfbmltndstj", results[0].nsName)
 	assert.Equal(t, "ksvraapqfiyf", results[0].relName)
 	assert.NotNil(t, results[0].cid)
-	assert.False(t, results[0].activated.Valid)
+	value, err := results[0].activated.Value()
+	require.NoError(t, err)
+	assert.Equal(t, "2023-09-26T08:09:30Z", value)
 }

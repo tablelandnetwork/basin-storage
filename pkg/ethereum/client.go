@@ -18,7 +18,9 @@ import (
 type BasinStorage interface {
 	EstimateGas(ctx context.Context,
 		pub string,
-		deals []BasinStorageDealInfo) (*bind.TransactOpts, error)
+		deals []BasinStorageDealInfo,
+	) (*bind.TransactOpts, error)
+	GetPendingNonce(ctx context.Context) (uint64, error)
 	GetRecentDeals(ctx context.Context,
 		pub string) (map[uint64]BasinStorageDealInfo, error)
 	AddDeals(ctx context.Context,
@@ -46,7 +48,7 @@ func NewClient(
 ) (*Client, error) {
 	contract, err := NewContract(contractAddr, contractBackend)
 	if err != nil {
-		return nil, fmt.Errorf("creating contract: %v", err)
+		return nil, fmt.Errorf("cannot create contract instance: %v", err)
 	}
 	return &Client{
 		contract:     contract,
@@ -105,6 +107,11 @@ func (c *Client) EstimateGas(
 	}, nil
 }
 
+// GetPendingNonce returns the pending nonce of the given wallet.
+func (c *Client) GetPendingNonce(ctx context.Context) (uint64, error) {
+	return c.backend.PendingNonceAt(ctx, c.wallet.Address())
+}
+
 // GetRecentDeals returns the latest 10 deals added to the BasinStorage smart contract for the given publisher.
 func (c *Client) GetRecentDeals(ctx context.Context, pub string) (map[uint64]BasinStorageDealInfo, error) {
 	callOpts := &bind.CallOpts{
@@ -113,7 +120,7 @@ func (c *Client) GetRecentDeals(ctx context.Context, pub string) (map[uint64]Bas
 	}
 	latestDeals, err := c.contract.LatestNDeals(callOpts, pub, big.NewInt(10))
 	if err != nil {
-		return nil, fmt.Errorf("failed to get recent deals: %v", err)
+		return nil, fmt.Errorf("failed to get latest 10 deals: %v", err)
 	}
 
 	// index recent deals in a map

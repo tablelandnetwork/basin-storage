@@ -7,7 +7,7 @@ require (
 	github.com/GoogleCloudPlatform/functions-framework-go v1.7.4
 	github.com/cloudevents/sdk-go/v2 v2.14.0
 	github.com/cockroachdb/cockroach-go v2.0.1+incompatible
-	github.com/ethereum/go-ethereum v1.13.0
+	github.com/ethereum/go-ethereum v1.12.2
 	github.com/googleapis/google-cloudevents-go v0.7.0
 	github.com/ipfs/go-cid v0.4.1
 	github.com/lib/pq v1.10.9
@@ -19,19 +19,11 @@ require (
 )
 
 require (
-	github.com/Microsoft/go-winio v0.6.1 // indirect
-	github.com/bits-and-blooms/bitset v1.5.0 // indirect
-	github.com/consensys/bavard v0.1.13 // indirect
-	github.com/consensys/gnark-crypto v0.10.0 // indirect
-	github.com/crate-crypto/go-kzg-4844 v0.3.0 // indirect
-	github.com/ethereum/c-kzg-4844 v0.3.1 // indirect
 	github.com/ipfs/go-libipfs v0.6.0 // indirect
-	github.com/mmcloughlin/addchain v0.4.0 // indirect
 	github.com/multiformats/go-multistream v0.4.1 // indirect
-	github.com/supranational/blst v0.3.11 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	go.opentelemetry.io/otel/metric v1.18.0 // indirect
-	rsc.io/tmplfunc v0.0.3 // indirect
+	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 )
 
 require (
@@ -135,7 +127,7 @@ require (
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
-	golang.org/x/crypto v0.13.0 // indirect
+	golang.org/x/crypto v0.13.0
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9 // indirect
 	golang.org/x/mod v0.12.0 // indirect
 	golang.org/x/net v0.15.0 // indirect

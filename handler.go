@@ -53,7 +53,6 @@ func Uploader(ctx context.Context, e event.Event) error {
 // StatusChecker is the HTTP function that is called by the Functions Framework.
 func StatusChecker(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-
 	cfg := &storage.StatusCheckerConfig{
 		W3SToken:         os.Getenv("WEB3STORAGE_TOKEN"),
 		CrdbConn:         os.Getenv("CRDB_CONN_STRING"),
@@ -63,7 +62,18 @@ func StatusChecker(w http.ResponseWriter, r *http.Request) {
 		BasinStorageAddr: "0x4b1f4d8100e51afe644b189d77784dec225e0596",  // TODO: move to config
 	}
 
-	sc, err := storage.NewStatusChecker(ctx, cfg)
+	if err := r.ParseForm(); err != nil {
+		errMsg := fmt.Sprintf("failed to parse form: %v", err)
+		fmt.Println(errMsg)
+		http.Error(w, errMsg, http.StatusInternalServerError)
+		return
+	}
+	simulated := false
+	if r.Form.Get("simulated") == "true" {
+		simulated = true
+	}
+
+	sc, err := storage.NewStatusChecker(ctx, cfg, simulated)
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to initialize status checker: %v", err)
 		fmt.Println(errMsg) // todo: enbale proper logging

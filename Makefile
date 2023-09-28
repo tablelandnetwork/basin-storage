@@ -12,6 +12,10 @@ uploader-test:
 	go test ./... -timeout 30s -run ^TestUploader$
 .PHONY: uploader-test	
 
+checker-test:
+	go test ./... -timeout 5m -run ^TestChecker$
+.PHONY: checker-test
+
 mocks: clean-mocks
 	go run github.com/vektra/mockery/v2@v2.14.0 --name=GCS --recursive --with-expecter
 .PHONY: mocks
@@ -33,7 +37,7 @@ uploader-deploy:
 	--entry-point=Uploader \
 	--trigger-event-filters="type=google.cloud.storage.object.v1.finalized" \
 	--trigger-event-filters="bucket=tableland-basin-staging"  \
-	--memory 8192MB \
+	--memory 32768MB \
 	--timeout 3600s \
 	--env-vars-file uploader.env.yml
 .PHONY: uploader-deploy
@@ -57,5 +61,5 @@ checker-deploy:
 .PHONY: checker-deploy
 
 ethereum:
-	go run github.com/ethereum/go-ethereum/cmd/abigen@v1.11.4 --abi ./evm/basin_storage/out/BasinStorage.sol/BasinStorage.abi.json --bin ./evm/basin_storage/out/BasinStorage.sol/BasinStorage.bin --pkg ethereum --type Contract --out pkg/ethereum/contract.go
+	go run github.com/ethereum/go-ethereum/cmd/abigen@v1.12.2 --abi ./evm/basin_storage/out/BasinStorage.sol/BasinStorage.abi.json --bin ./evm/basin_storage/out/BasinStorage.sol/BasinStorage.bin --pkg ethereum --type Contract --out pkg/ethereum/contract.go
 .PHONY: ethereum	

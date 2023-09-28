@@ -59,7 +59,7 @@ func StatusChecker(w http.ResponseWriter, r *http.Request) {
 		PrivateKey:       os.Getenv("PRIVATE_KEY"),
 		ChainID:          os.Getenv("CHAIN_ID"),
 		BackendURL:       "https://api.calibration.node.glif.io/rpc/v1", // TODO: move to config
-		BasinStorageAddr: "0x4b1f4d8100e51afe644b189d77784dec225e0596",  // TODO: move to config
+		BasinStorageAddr: "0xd0ee658f1203302e35B9B9E3A73CB3472A2C2373",  // TODO: move to config
 	}
 
 	if err := r.ParseForm(); err != nil {

@@ -10,7 +10,8 @@ contract BasinStorageAddDealsTest is Test {
     event DealAdded(
         uint256 indexed dealId,
         string indexed pub,
-        address indexed owner
+        address indexed owner,
+        string cid
     );
 
     constructor() {
@@ -29,7 +30,8 @@ contract BasinStorageAddDealsTest is Test {
         BasinStorage.DealInfo[] memory deals = new BasinStorage.DealInfo[](1);
         deals[0] = BasinStorage.DealInfo({
             id: 1,
-            selectorPath: "path/to/selector1"
+            selectorPath: "path/to/selector1",
+            cid: "bafyfoobar1"
         });
 
         string memory reason = string.concat(
@@ -49,7 +51,8 @@ contract BasinStorageAddDealsTest is Test {
         BasinStorage.DealInfo[] memory deals = new BasinStorage.DealInfo[](1);
         deals[0] = BasinStorage.DealInfo({
             id: 1,
-            selectorPath: "path/to/selector1"
+            selectorPath: "path/to/selector1",
+            cid: "bafyfoobar1"
         });
 
         vm.expectRevert(
@@ -65,7 +68,7 @@ contract BasinStorageAddDealsTest is Test {
         basinStorage.createPub(address(this), pub);
         basinStorage.addDeals(pub, deals);
         deals = basinStorage.latestNDeals(pub, 2);
-        assertEq(deals.length, 0, "Number of deals should be 2");
+        assertEq(deals.length, 0, "Number of deals should be 0");
     }
 
     function testAddDealSuccess() public {
@@ -73,22 +76,24 @@ contract BasinStorageAddDealsTest is Test {
         BasinStorage.DealInfo[] memory deals = new BasinStorage.DealInfo[](2);
         deals[0] = BasinStorage.DealInfo({
             id: 1,
-            selectorPath: "path/to/selector1"
+            selectorPath: "path/to/selector1",
+            cid: "bafyfoobar1"
         });
         deals[1] = BasinStorage.DealInfo({
             id: 2,
-            selectorPath: "path/to/selector2"
+            selectorPath: "path/to/selector2",
+            cid: "bafyfoobar2"
         });
 
         basinStorage.createPub(address(this), pub);
 
         // check that the 1st event is emitted
         vm.expectEmit(address(basinStorage));
-        emit BasinStorage.DealAdded(1, pub, address(this));
+        emit BasinStorage.DealAdded(1, pub, address(this), "bafyfoobar1");
 
         // check that the 2nd event is emitted
         vm.expectEmit(address(basinStorage));
-        emit BasinStorage.DealAdded(2, pub, address(this));
+        emit BasinStorage.DealAdded(2, pub, address(this), "bafyfoobar2");
 
         basinStorage.addDeals(pub, deals);
         deals = basinStorage.latestNDeals(pub, 2);
@@ -99,11 +104,21 @@ contract BasinStorageAddDealsTest is Test {
             "path/to/selector1",
             "Deal selector should be correct"
         );
+        assertEq(
+            deals[0].cid,
+            "bafyfoobar1",
+            "Deal content identifier should be correct"
+        );
         assertEq(deals[1].id, 2, "Deal ID should be correct");
         assertEq(
             deals[1].selectorPath,
             "path/to/selector2",
             "Deal selector should be correct"
+        );
+        assertEq(
+            deals[1].cid,
+            "bafyfoobar2",
+            "Deal content identifier should be correct"
         );
     }
 }
@@ -169,15 +184,18 @@ abstract contract HelperContract is Test {
         BasinStorage.DealInfo[] memory deals = new BasinStorage.DealInfo[](3);
         deals[0] = BasinStorage.DealInfo({
             id: 1,
-            selectorPath: "path/to/selector1"
+            selectorPath: "path/to/selector1",
+            cid: "bafyfoobar1"
         });
         deals[1] = BasinStorage.DealInfo({
             id: 2,
-            selectorPath: "path/to/selector2"
+            selectorPath: "path/to/selector2",
+            cid: "bafyfoobar2"
         });
         deals[2] = BasinStorage.DealInfo({
             id: 3,
-            selectorPath: "path/to/selector3"
+            selectorPath: "path/to/selector3",
+            cid: "bafyfoobar3"
         });
 
         basinStorage.createPub(address(this), pub);
@@ -188,15 +206,18 @@ abstract contract HelperContract is Test {
         pub = "654321";
         deals[0] = BasinStorage.DealInfo({
             id: 4,
-            selectorPath: "path/to/selector4"
+            selectorPath: "path/to/selector4",
+            cid: "bafyfoobar4"
         });
         deals[1] = BasinStorage.DealInfo({
             id: 5,
-            selectorPath: "path/to/selector5"
+            selectorPath: "path/to/selector5",
+            cid: "bafyfoobar5"
         });
         deals[2] = BasinStorage.DealInfo({
             id: 6,
-            selectorPath: "path/to/selector6"
+            selectorPath: "path/to/selector6",
+            cid: "bafyfoobar6"
         });
         basinStorage.createPub(address(0x123), pub);
         basinStorage.addDeals(pub, deals);
@@ -206,15 +227,18 @@ abstract contract HelperContract is Test {
         vm.roll(150);
         deals[0] = BasinStorage.DealInfo({
             id: 7,
-            selectorPath: "path/to/selector7"
+            selectorPath: "path/to/selector7",
+            cid: "bafyfoobar7"
         });
         deals[1] = BasinStorage.DealInfo({
             id: 8,
-            selectorPath: "path/to/selector8"
+            selectorPath: "path/to/selector8",
+            cid: "bafyfoobar8"
         });
         deals[2] = BasinStorage.DealInfo({
             id: 9,
-            selectorPath: "path/to/selector9"
+            selectorPath: "path/to/selector9",
+            cid: "bafyfoobar9"
         });
         basinStorage.createPub(address(this), pub);
         basinStorage.addDeals(pub, deals);
@@ -224,15 +248,18 @@ abstract contract HelperContract is Test {
         vm.roll(200);
         deals[0] = BasinStorage.DealInfo({
             id: 10,
-            selectorPath: "path/to/selector10"
+            selectorPath: "path/to/selector10",
+            cid: "bafyfoobar10"
         });
         deals[1] = BasinStorage.DealInfo({
             id: 11,
-            selectorPath: "path/to/selector11"
+            selectorPath: "path/to/selector11",
+            cid: "bafyfoobar11"
         });
         deals[2] = BasinStorage.DealInfo({
             id: 12,
-            selectorPath: "path/to/selector12"
+            selectorPath: "path/to/selector12",
+            cid: "bafyfoobar12"
         });
         // no creating pub if it already exists
         basinStorage.addDeals(pub, deals);

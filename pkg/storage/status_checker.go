@@ -166,6 +166,7 @@ func (sc *StatusChecker) getActiveDeals(
 		deals = append(deals, ethereum.BasinStorageDealInfo{
 			Id:           d.DealID,
 			SelectorPath: d.DataModelSelector,
+			Cid:          status.Cid.String(),
 		})
 	}
 	if len(deals) == 0 {
@@ -284,8 +285,10 @@ func (sc *StatusChecker) removeDuplicateDeals(
 ) ([]ethereum.BasinStorageDealInfo, error) {
 	// filter out deals that are already in the contract
 	// by looking at the recent deals.
-	// due to db failure and retries, it may happen that deals are already added
-	// to avoid duplicates we filter out deals that are already in the contract
+	// due to db failure and retries, it may happen that
+	// deals are already added in the previous attempt
+	// to avoid duplicates we filter out deals that are
+	// already in the contract.
 	recentDeals, err := sc.contractClient.GetRecentDeals(ctx, pub)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get recent deals: %v", err)
@@ -293,7 +296,7 @@ func (sc *StatusChecker) removeDuplicateDeals(
 
 	deDupDeals := []ethereum.BasinStorageDealInfo{}
 	for _, d := range deals {
-		if _, ok := recentDeals[d.Id]; !ok {
+		if _, ok := recentDeals[d.Cid]; !ok {
 			deDupDeals = append(deDupDeals, d)
 		} else {
 			fmt.Println(

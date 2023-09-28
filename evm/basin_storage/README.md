@@ -1,66 +1,48 @@
-## Foundry
+# Basin Storage Contracts
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
-
-Foundry consists of:
-
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
-
-## Documentation
-
-https://book.getfoundry.sh/
+This project is built using foundry [framework](https://book.getfoundry.sh/)
 
 ## Usage
 
-### Build
+If the commands are run from project root pass the `--root` flag to `forge` to tell it where the contracts and libs are located.
+
+### Compile contracts
 
 ```shell
-$ forge build
+forge compile --root evm/basin_storage
 ```
 
 ### Test
 
 ```shell
-$ forge test
-```
-
-### Format
-
-```shell
-$ forge fmt
+forge test --root evm/basin_storage -vvv --gas-report
 ```
 
 ### Gas Snapshots
 
 ```shell
-$ forge snapshot
+forge snapshot --root evm/basin-storage
 ```
 
-### Anvil
+### Deploying Basin storage
 
 ```shell
-$ anvil
+PRIVATE_KEY=<your private key> forge script evm/basin_storage/script/BasinStorage.s.sol:BasinStorageScript --root evm/basin_storage --broadcast --rpc-url <rpc url> --skip-simulation --gas-estimate-multiplier 5000 --retries 10
 ```
 
-### Deploy
+When deploying to Filecoin Calibration use the following RPC url:
+`https://api.calibration.node.glif.io/rpc/v1`
 
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
+### Using cast
+
+Create a Pub
+
+```sh
+cast send --private-key <your private key> --rpc-url <rpc url> <contract addr> "createPub(address,string)" "<owner adder>" "<nsname>.<relname>"
 ```
 
-### Cast
+Fetch pubs of an owner
 
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
+```sh
+ cast call <contract addr> --rpc-url <rpc url> "pubsOfOwner(address)(string[])" <owner addr>
 ```

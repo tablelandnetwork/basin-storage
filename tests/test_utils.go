@@ -88,6 +88,7 @@ func setupDB(t *testing.T, db *sql.DB) {
 			cid BYTEA NOT NULL,
 			relation TEXT NOT NULL,
 			activated TIMESTAMP,
+			timestamp BIGINT,
 			CONSTRAINT fk_namespace
 			FOREIGN KEY(ns_id)
 			REFERENCES namespaces(id)

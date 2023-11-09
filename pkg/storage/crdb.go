@@ -16,7 +16,7 @@ import (
 	"github.com/cockroachdb/cockroach-go/crdb"
 )
 
-func createJobTx(tx *sql.Tx, cidBytes []byte, pub Pub) error {
+func createJobTx(tx *sql.Tx, cidBytes []byte, pub Pub, timestamp *int64) error {
 	row := tx.QueryRow(
 		"SELECT id FROM namespaces WHERE name = $1", pub.Namespace)
 	var nsID int
@@ -25,8 +25,8 @@ func createJobTx(tx *sql.Tx, cidBytes []byte, pub Pub) error {
 	}
 
 	_, err := tx.Exec(
-		"Insert into jobs (ns_id, cid, relation) values($1, $2, $3)",
-		nsID, cidBytes, pub.Relation)
+		"insert into jobs (ns_id, cid, relation, timestamp) values($1, $2, $3, $4)",
+		nsID, cidBytes, pub.Relation, timestamp)
 	if err != nil {
 		return errors.Wrap(err, "updating record")
 	}
@@ -36,7 +36,7 @@ func createJobTx(tx *sql.Tx, cidBytes []byte, pub Pub) error {
 
 // Crdb is an interface that defines the methods to interact with CockroachDB.
 type Crdb interface {
-	CreateJob(ctx context.Context, cidStr string, fileName string) error
+	CreateJob(ctx context.Context, cidStr string, fileName string, timestamp *int64) error
 	UnfinishedJobs(ctx context.Context) ([]UnfinishedJob, error)
 	UpdateJobStatus(ctx context.Context, cid []byte, activation time.Time) error
 }
@@ -81,7 +81,7 @@ func extractPub(filename string) (Pub, error) {
 }
 
 // CreateJob creates a new job in the DB.
-func (db *DBClient) CreateJob(ctx context.Context, cidStr string, fname string) error {
+func (db *DBClient) CreateJob(ctx context.Context, cidStr string, fname string, timestamp *int64) error {
 	cid, err := cid.Decode(cidStr)
 	if err != nil {
 		return fmt.Errorf("failed to decode cid: %v", err)
@@ -99,7 +99,7 @@ func (db *DBClient) CreateJob(ctx context.Context, cidStr string, fname string) 
 	}
 
 	err = crdb.ExecuteTx(ctx, db.DB, txopts, func(tx *sql.Tx) error {
-		return createJobTx(tx, cid.Bytes(), pub)
+		return createJobTx(tx, cid.Bytes(), pub, timestamp)
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create new job: %v", err)
@@ -114,6 +114,7 @@ type UnfinishedJob struct {
 	Pub       Pub
 	Cid       []byte
 	Activated time.Time
+	Timestamp *int64
 }
 
 // UnfinishedJobs returns all currently unfinished jobs in the db.

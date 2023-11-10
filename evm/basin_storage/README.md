@@ -1,4 +1,4 @@
-## Foundry
+# Basin Storage Contract
 
 **Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
 
@@ -51,16 +51,53 @@ $ anvil
 $ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
 ```
 
-### Cast
+### Cast commands
+
+#### Add CID
+
+Add a CID to the contract
 
 ```shell
-$ cast <subcommand>
+cast send \
+--private-key <your private key> \
+--rpc-url https://api.calibration.node.glif.io/rpc/v1 \
+<contract adddress> \
+"addCID(string,string,uint256)" \
+"pub.name" \
+"bafyexamplecid" \
+1699615822
 ```
 
-### Help
+#### Get pubs of owner
+
+Get pubs of an owner
 
 ```shell
-$ forge --help
-$ anvil --help
-$ cast --help
+cast call <contract address> \
+--rpc-url "https://api.calibration.node.glif.io/rpc/v1" \
+"pubsOfOwner(address)(string[])" \
+<data owner's address>
+```
+
+#### Get cid at timestamp
+
+Get cid at timestamp (change the timestamp accordingly)
+
+```shell
+cast call <contract address> \
+--rpc-url "https://api.calibration.node.glif.io/rpc/v1" \
+"cidsAtTimestamp(string,uint256)(string[])" \
+"pub.name" \
+1699615822
+```
+
+#### Get cid in time range
+
+Get cid in time range (change timestamps accordingly)
+
+```shell
+cast call <contract address> \
+--rpc-url "https://api.calibration.node.glif.io/rpc/v1" \
+"cidsInRange(string,uint256,uint256)(string[])" \
+"testavichalp.data" 1699615821 1699615823
 ```

@@ -1,9 +1,6 @@
 [submodule "evm/basin_storage/lib/forge-std"]
 	path = evm/basin_storage/lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
-[submodule "evm/basin_storage/lib/filecoin-solidity"]
-	path = evm/basin_storage/lib/filecoin-solidity
-	url = https://github.com/filecoin-project/filecoin-solidity
 [submodule "evm/basin_storage/lib/openzeppelin-contracts"]
 	path = evm/basin_storage/lib/openzeppelin-contracts
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts

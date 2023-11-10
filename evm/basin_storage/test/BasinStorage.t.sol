@@ -4,7 +4,7 @@ pragma solidity 0.8.21;
 import {Test, console2} from "forge-std/Test.sol";
 import {BasinStorage} from "../src/BasinStorage.sol";
 
-contract BasinStorageAddDealsTest is Test {
+contract BasinStorageAddCIDTest is Test {
     BasinStorage public basinStorage;
 
     event CIDAdded(
@@ -15,12 +15,12 @@ contract BasinStorageAddDealsTest is Test {
 
     constructor() {
         basinStorage = new BasinStorage();
-        // give the contract the PUB_ADMIN_ROLE before adding a deal
+        // give the contract the PUB_ADMIN_ROLE before adding a cid
         basinStorage.grantRole(basinStorage.PUB_ADMIN_ROLE(), address(this));
     }
 
     function testAddCIDUnauthorized() public {
-        // Call the AddDeal function with an unauthorized account
+        // Call the AddCID function with an unauthorized account
         vm.prank(address(0));
 
         // Define the input parameters
@@ -38,7 +38,6 @@ contract BasinStorageAddDealsTest is Test {
         basinStorage.addCID(pub, cid, epoch);
     }
 
-    // Test the CreateDealInfo function
     function testAddCIDWithoutAddingPub() public {
         // Define the input parameters
         string memory pub = "123456";
@@ -69,7 +68,7 @@ contract BasinStorageAddDealsTest is Test {
 
         string[] memory cids = basinStorage.cidsAtTimestamp(pub, 1);
 
-        assertEq(cids.length, 2, "Number of deals should be 2");
+        assertEq(cids.length, 2, "Number of cids should be 2");
         assertEq(
             cids[0],
             "bafyfoobar1",
@@ -90,7 +89,7 @@ contract BasinStoragePubsTest is Test {
 
     constructor() {
         basinStorage = new BasinStorage();
-        // give the contract the PUB_ADMIN_ROLE before adding a deal
+        // give the contract the PUB_ADMIN_ROLE before adding a cid
         basinStorage.grantRole(basinStorage.PUB_ADMIN_ROLE(), address(this));
     }
 
@@ -138,7 +137,7 @@ contract BasinStoragePubsTest is Test {
 
 abstract contract HelperContract is Test {
     function setUpHelper(BasinStorage basinStorage) public {
-        // Create deals for pub 1, owner 1 (current contract)
+        // Create cids for pub 1, owner 1 (current contract)
         string memory pub = "123456";
         string memory cid1 = "bafyfoobar1";
         string memory cid2 = "bafyfoobar2";
@@ -150,7 +149,7 @@ abstract contract HelperContract is Test {
         basinStorage.addCID(pub, cid2, epoch1);
         basinStorage.addCID(pub, cid3, epoch1);
 
-        // Create deals for pub 2, owner 1 (current contract)
+        // Create cids for pub 2, owner 1 (current contract)
         pub = "654321";
         string memory cid4 = "bafyfoobar4";
         string memory cid5 = "bafyfoobar5";
@@ -162,7 +161,7 @@ abstract contract HelperContract is Test {
         basinStorage.addCID(pub, cid5, epoch2);
         basinStorage.addCID(pub, cid6, epoch2);
 
-        // Create deals for pub 3, owner 2 (address 0x123)
+        // Create cids for pub 3, owner 2 (address 0x123)
         pub = "111111";
         string memory cid7 = "bafyfoobar7";
         string memory cid8 = "bafyfoobar8";
@@ -204,57 +203,57 @@ contract BasinStorageCidsInRangeTest is Test, HelperContract {
     function testcidsInRange() public {
         string memory pub = "123456";
         // after 0, before 4, excluding both 0 and 5
-        string[] memory deals = basinStorage.cidsInRange(pub, 0, 4);
+        string[] memory cids = basinStorage.cidsInRange(pub, 0, 4);
 
-        assertEq(deals.length, 3, "Deals count should be 3");
-        assertEq(deals[0], "bafyfoobar1", "cid should be bafyfoobar1");
-        assertEq(deals[1], "bafyfoobar2", "cid should be bafyfoobar2");
-        assertEq(deals[2], "bafyfoobar3", "cid should be bafyfoobar3");
+        assertEq(cids.length, 3, "cids count should be 3");
+        assertEq(cids[0], "bafyfoobar1", "cid should be bafyfoobar1");
+        assertEq(cids[1], "bafyfoobar2", "cid should be bafyfoobar2");
+        assertEq(cids[2], "bafyfoobar3", "cid should be bafyfoobar3");
 
         // after 0, before 5, excluding both 0 and 5
-        deals = basinStorage.cidsInRange(pub, 0, 5);
-        assertEq(deals.length, 6, "Deals count should be 6");
-        assertEq(deals[0], "bafyfoobar1", "cid should be bafyfoobar1");
-        assertEq(deals[1], "bafyfoobar2", "cid should be bafyfoobar2");
-        assertEq(deals[2], "bafyfoobar3", "cid should be bafyfoobar3");
-        assertEq(deals[3], "bafyfoobar10", "cid should be bafyfoobar10");
-        assertEq(deals[4], "bafyfoobar11", "cid should be bafyfoobar11");
-        assertEq(deals[5], "bafyfoobar12", "cid should be bafyfoobar12");
+        cids = basinStorage.cidsInRange(pub, 0, 5);
+        assertEq(cids.length, 6, "cids count should be 6");
+        assertEq(cids[0], "bafyfoobar1", "cid should be bafyfoobar1");
+        assertEq(cids[1], "bafyfoobar2", "cid should be bafyfoobar2");
+        assertEq(cids[2], "bafyfoobar3", "cid should be bafyfoobar3");
+        assertEq(cids[3], "bafyfoobar10", "cid should be bafyfoobar10");
+        assertEq(cids[4], "bafyfoobar11", "cid should be bafyfoobar11");
+        assertEq(cids[5], "bafyfoobar12", "cid should be bafyfoobar12");
 
-        deals = basinStorage.cidsInRange(pub, 4, 5);
-        assertEq(deals.length, 0, "Deals count should be 0");
+        cids = basinStorage.cidsInRange(pub, 4, 5);
+        assertEq(cids.length, 0, "cids count should be 0");
 
         // after == before raises error
         vm.expectRevert(
             abi.encodeWithSelector(BasinStorage.IncorrectRange.selector, 1, 1)
         );
-        deals = basinStorage.cidsInRange(pub, 1, 1);
-        assertEq(deals.length, 0, "Deals count should be 0");
+        cids = basinStorage.cidsInRange(pub, 1, 1);
+        assertEq(cids.length, 0, "cids count should be 0");
 
         // after > before raises error
         vm.expectRevert(
             abi.encodeWithSelector(BasinStorage.IncorrectRange.selector, 5, 4)
         );
-        deals = basinStorage.cidsInRange(pub, 5, 4);
+        cids = basinStorage.cidsInRange(pub, 5, 4);
 
         pub = "654321"; // same owner different pub
-        deals = basinStorage.cidsInRange(pub, 0, 5);
-        assertEq(deals.length, 3, "Deals count should be 3");
-        assertEq(deals[0], "bafyfoobar4", "cid should be bafyfoobar4");
-        assertEq(deals[1], "bafyfoobar5", "cid should be bafyfoobar5");
-        assertEq(deals[2], "bafyfoobar6", "cid should be bafyfoobar6");
+        cids = basinStorage.cidsInRange(pub, 0, 5);
+        assertEq(cids.length, 3, "cids count should be 3");
+        assertEq(cids[0], "bafyfoobar4", "cid should be bafyfoobar4");
+        assertEq(cids[1], "bafyfoobar5", "cid should be bafyfoobar5");
+        assertEq(cids[2], "bafyfoobar6", "cid should be bafyfoobar6");
 
-        deals = basinStorage.cidsInRange(pub, 1, 3);
-        assertEq(deals.length, 3, "Deals count should be 3");
+        cids = basinStorage.cidsInRange(pub, 1, 3);
+        assertEq(cids.length, 3, "cids count should be 3");
 
-        deals = basinStorage.cidsInRange(pub, 1, 2);
-        assertEq(deals.length, 0, "Deals count should be 0");
+        cids = basinStorage.cidsInRange(pub, 1, 2);
+        assertEq(cids.length, 0, "cids count should be 0");
 
         pub = "111111"; // pub of diff owner: 0x123
-        deals = basinStorage.cidsInRange(pub, 2, 5);
-        assertEq(deals.length, 3, "Deals count should be 3");
-        assertEq(deals[0], "bafyfoobar7", "cid should be bafyfoobar7");
-        assertEq(deals[1], "bafyfoobar8", "cid should be bafyfoobar8");
-        assertEq(deals[2], "bafyfoobar9", "cid should be bafyfoobar9");
+        cids = basinStorage.cidsInRange(pub, 2, 5);
+        assertEq(cids.length, 3, "cids count should be 3");
+        assertEq(cids[0], "bafyfoobar7", "cid should be bafyfoobar7");
+        assertEq(cids[1], "bafyfoobar8", "cid should be bafyfoobar8");
+        assertEq(cids[2], "bafyfoobar9", "cid should be bafyfoobar9");
     }
 }

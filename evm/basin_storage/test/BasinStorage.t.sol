@@ -4,35 +4,29 @@ pragma solidity 0.8.21;
 import {Test, console2} from "forge-std/Test.sol";
 import {BasinStorage} from "../src/BasinStorage.sol";
 
-contract BasinStorageAddDealsTest is Test {
+contract BasinStorageAddCIDTest is Test {
     BasinStorage public basinStorage;
 
-    event DealAdded(
-        uint256 indexed dealId,
+    event CIDAdded(
+        string indexed cid,
         string indexed pub,
-        address indexed owner,
-        string cid
+        address indexed owner
     );
 
     constructor() {
         basinStorage = new BasinStorage();
-        // give the contract the PUB_ADMIN_ROLE before adding a deal
+        // give the contract the PUB_ADMIN_ROLE before adding a cid
         basinStorage.grantRole(basinStorage.PUB_ADMIN_ROLE(), address(this));
     }
 
-    function testAddDealUnauthorized() public {
-        // Call the AddDeal function with an unauthorized account
+    function testAddCIDUnauthorized() public {
+        // Call the AddCID function with an unauthorized account
         vm.prank(address(0));
 
         // Define the input parameters
         string memory pub = "123456";
-        // BasinStorage.DealInfo memory dealInfo[] =
-        BasinStorage.DealInfo[] memory deals = new BasinStorage.DealInfo[](1);
-        deals[0] = BasinStorage.DealInfo({
-            id: 1,
-            selectorPath: "path/to/selector1",
-            cid: "bafyfoobar1"
-        });
+        uint256 epoch = block.timestamp;
+        string memory cid = "bafyfoobar1";
 
         string memory reason = string.concat(
             "AccessControl: account ",
@@ -41,84 +35,49 @@ contract BasinStorageAddDealsTest is Test {
             "0xafda658ee731b8f86292e3b52a311534cd93642b12a698012439316e0c3a0995"
         );
         vm.expectRevert(bytes(reason));
-        basinStorage.addDeals(pub, deals);
+        basinStorage.addCID(pub, cid, epoch);
     }
 
-    // Test the CreateDealInfo function
-    function testAddDealWithoutAddingPub() public {
+    function testAddCIDWithoutAddingPub() public {
         // Define the input parameters
         string memory pub = "123456";
-        BasinStorage.DealInfo[] memory deals = new BasinStorage.DealInfo[](1);
-        deals[0] = BasinStorage.DealInfo({
-            id: 1,
-            selectorPath: "path/to/selector1",
-            cid: "bafyfoobar1"
-        });
-
+        string memory cid = "bafyfoobar1";
+        uint256 epoch = block.timestamp;
         vm.expectRevert(
             abi.encodeWithSelector(BasinStorage.PubDoesNotExist.selector, pub)
         );
-        basinStorage.addDeals(pub, deals);
+        basinStorage.addCID(pub, cid, epoch);
     }
 
-    function testAddDealEmptyInput() public {
+    function testAddCIDSuccess() public {
         string memory pub = "123456";
-        BasinStorage.DealInfo[] memory deals = new BasinStorage.DealInfo[](0);
-
-        basinStorage.createPub(address(this), pub);
-        basinStorage.addDeals(pub, deals);
-        deals = basinStorage.latestNDeals(pub, 2);
-        assertEq(deals.length, 0, "Number of deals should be 0");
-    }
-
-    function testAddDealSuccess() public {
-        string memory pub = "123456";
-        BasinStorage.DealInfo[] memory deals = new BasinStorage.DealInfo[](2);
-        deals[0] = BasinStorage.DealInfo({
-            id: 1,
-            selectorPath: "path/to/selector1",
-            cid: "bafyfoobar1"
-        });
-        deals[1] = BasinStorage.DealInfo({
-            id: 2,
-            selectorPath: "path/to/selector2",
-            cid: "bafyfoobar2"
-        });
-
+        uint256 epoch = block.timestamp;
+        string memory cid1 = "bafyfoobar1";
+        string memory cid2 = "bafyfoobar2";
         basinStorage.createPub(address(this), pub);
 
         // check that the 1st event is emitted
         vm.expectEmit(address(basinStorage));
-        emit BasinStorage.DealAdded(1, pub, address(this), "bafyfoobar1");
+        emit BasinStorage.CIDAdded("bafyfoobar1", pub, address(this));
+        basinStorage.addCID(pub, cid1, epoch);
 
         // check that the 2nd event is emitted
         vm.expectEmit(address(basinStorage));
-        emit BasinStorage.DealAdded(2, pub, address(this), "bafyfoobar2");
+        emit BasinStorage.CIDAdded("bafyfoobar2", pub, address(this));
+        basinStorage.addCID(pub, cid2, epoch);
 
-        basinStorage.addDeals(pub, deals);
-        deals = basinStorage.latestNDeals(pub, 2);
-        assertEq(deals.length, 2, "Number of deals should be 2");
-        assertEq(deals[0].id, 1, "Deal ID should be correct");
+        string[] memory cids = basinStorage.cidsAtTimestamp(pub, 1);
+
+        assertEq(cids.length, 2, "Number of cids should be 2");
         assertEq(
-            deals[0].selectorPath,
-            "path/to/selector1",
-            "Deal selector should be correct"
-        );
-        assertEq(
-            deals[0].cid,
+            cids[0],
             "bafyfoobar1",
-            "Deal content identifier should be correct"
-        );
-        assertEq(deals[1].id, 2, "Deal ID should be correct");
-        assertEq(
-            deals[1].selectorPath,
-            "path/to/selector2",
-            "Deal selector should be correct"
+            "content identifier should be correct"
         );
         assertEq(
-            deals[1].cid,
+            cids[1],
             "bafyfoobar2",
-            "Deal content identifier should be correct"
+            "content identifier should be correct"
         );
     }
 }
@@ -130,7 +89,7 @@ contract BasinStoragePubsTest is Test {
 
     constructor() {
         basinStorage = new BasinStorage();
-        // give the contract the PUB_ADMIN_ROLE before adding a deal
+        // give the contract the PUB_ADMIN_ROLE before adding a cid
         basinStorage.grantRole(basinStorage.PUB_ADMIN_ROLE(), address(this));
     }
 
@@ -178,100 +137,62 @@ contract BasinStoragePubsTest is Test {
 
 abstract contract HelperContract is Test {
     function setUpHelper(BasinStorage basinStorage) public {
-        // Create deals for pub 1, owner 1 (current contract)
-        vm.roll(0);
+        // Create cids for pub 1, owner 1 (current contract)
         string memory pub = "123456";
-        BasinStorage.DealInfo[] memory deals = new BasinStorage.DealInfo[](3);
-        deals[0] = BasinStorage.DealInfo({
-            id: 1,
-            selectorPath: "path/to/selector1",
-            cid: "bafyfoobar1"
-        });
-        deals[1] = BasinStorage.DealInfo({
-            id: 2,
-            selectorPath: "path/to/selector2",
-            cid: "bafyfoobar2"
-        });
-        deals[2] = BasinStorage.DealInfo({
-            id: 3,
-            selectorPath: "path/to/selector3",
-            cid: "bafyfoobar3"
-        });
+        string memory cid1 = "bafyfoobar1";
+        string memory cid2 = "bafyfoobar2";
+        string memory cid3 = "bafyfoobar3";
+        uint256 epoch1 = block.timestamp;
 
         basinStorage.createPub(address(this), pub);
-        basinStorage.addDeals(pub, deals);
+        basinStorage.addCID(pub, cid1, epoch1);
+        basinStorage.addCID(pub, cid2, epoch1);
+        basinStorage.addCID(pub, cid3, epoch1);
 
-        // Create deals for pub 2, owner 1 (current contract)
-        vm.roll(100);
+        // Create cids for pub 2, owner 1 (current contract)
         pub = "654321";
-        deals[0] = BasinStorage.DealInfo({
-            id: 4,
-            selectorPath: "path/to/selector4",
-            cid: "bafyfoobar4"
-        });
-        deals[1] = BasinStorage.DealInfo({
-            id: 5,
-            selectorPath: "path/to/selector5",
-            cid: "bafyfoobar5"
-        });
-        deals[2] = BasinStorage.DealInfo({
-            id: 6,
-            selectorPath: "path/to/selector6",
-            cid: "bafyfoobar6"
-        });
-        basinStorage.createPub(address(0x123), pub);
-        basinStorage.addDeals(pub, deals);
+        string memory cid4 = "bafyfoobar4";
+        string memory cid5 = "bafyfoobar5";
+        string memory cid6 = "bafyfoobar6";
+        uint256 epoch2 = block.timestamp + 1;
 
-        // Create deals for pub 3, owner 2 (address 0x123)
+        basinStorage.createPub(address(0x123), pub);
+        basinStorage.addCID(pub, cid4, epoch2);
+        basinStorage.addCID(pub, cid5, epoch2);
+        basinStorage.addCID(pub, cid6, epoch2);
+
+        // Create cids for pub 3, owner 2 (address 0x123)
         pub = "111111";
-        vm.roll(150);
-        deals[0] = BasinStorage.DealInfo({
-            id: 7,
-            selectorPath: "path/to/selector7",
-            cid: "bafyfoobar7"
-        });
-        deals[1] = BasinStorage.DealInfo({
-            id: 8,
-            selectorPath: "path/to/selector8",
-            cid: "bafyfoobar8"
-        });
-        deals[2] = BasinStorage.DealInfo({
-            id: 9,
-            selectorPath: "path/to/selector9",
-            cid: "bafyfoobar9"
-        });
+        string memory cid7 = "bafyfoobar7";
+        string memory cid8 = "bafyfoobar8";
+        string memory cid9 = "bafyfoobar9";
+        uint256 epoch3 = block.timestamp + 2;
+
         basinStorage.createPub(address(this), pub);
-        basinStorage.addDeals(pub, deals);
+        basinStorage.addCID(pub, cid7, epoch3);
+        basinStorage.addCID(pub, cid8, epoch3);
+        basinStorage.addCID(pub, cid9, epoch3);
 
         // same pub as 123456 but on a different block
         pub = "123456";
-        vm.roll(200);
-        deals[0] = BasinStorage.DealInfo({
-            id: 10,
-            selectorPath: "path/to/selector10",
-            cid: "bafyfoobar10"
-        });
-        deals[1] = BasinStorage.DealInfo({
-            id: 11,
-            selectorPath: "path/to/selector11",
-            cid: "bafyfoobar11"
-        });
-        deals[2] = BasinStorage.DealInfo({
-            id: 12,
-            selectorPath: "path/to/selector12",
-            cid: "bafyfoobar12"
-        });
+        uint256 epoch4 = block.timestamp + 3;
+        string memory cid10 = "bafyfoobar10";
+        string memory cid11 = "bafyfoobar11";
+        string memory cid12 = "bafyfoobar12";
+
         // no creating pub if it already exists
-        basinStorage.addDeals(pub, deals);
+        basinStorage.addCID(pub, cid10, epoch4);
+        basinStorage.addCID(pub, cid11, epoch4);
+        basinStorage.addCID(pub, cid12, epoch4);
     }
 }
 
-contract BasinStoragePaginatedDealsTest is Test, HelperContract {
+contract BasinStorageCidsInRangeTest is Test, HelperContract {
     BasinStorage public basinStorage;
 
     constructor() {
         basinStorage = new BasinStorage();
-        // give the contract the PUB_ADMIN_ROLE before adding a deal
+        // give the contract the PUB_ADMIN_ROLE before adding a cid
         basinStorage.grantRole(basinStorage.PUB_ADMIN_ROLE(), address(this));
     }
 
@@ -279,190 +200,60 @@ contract BasinStoragePaginatedDealsTest is Test, HelperContract {
         HelperContract.setUpHelper(basinStorage);
     }
 
-    function testpaginatedDeals(uint16 offset, uint16 limit) public {
-        vm.assume(offset >= 0 && offset <= 200);
-
-        // get latest N deals where N > total deals for an epoch range
+    function testcidsInRange() public {
         string memory pub = "123456";
-        BasinStorage.DealInfo[] memory deals = basinStorage.paginatedDeals(
-            pub,
-            offset,
-            limit
-        );
+        // after 0, before 4, excluding both 0 and 5
+        string[] memory cids = basinStorage.cidsInRange(pub, 0, 4);
 
-        if (limit >= 6 && offset == 200) {
-            assertEq(deals.length, 6, "Deals count should be 6");
-            // from 2nd (newer) batch
-            assertEq(deals[0].id, 10, "Deal id should be 10");
-            assertEq(deals[1].id, 11, "Deal id should be 11");
-            assertEq(deals[2].id, 12, "Deal id should be 12");
-            // from 1st (older) batch
-            assertEq(deals[3].id, 1, "Deal id should be 1");
-            assertEq(deals[4].id, 2, "Deal id should be 2");
-            assertEq(deals[5].id, 3, "Deal id should be 3");
-        } else if (limit >= 6 && offset < 200) {
-            assertEq(deals.length, 3, "Deals count should be 3");
-            assertEq(deals[0].id, 1, "Deal id should be 1");
-            assertEq(deals[1].id, 2, "Deal id should be 2");
-            assertEq(deals[2].id, 3, "Deal id should be 3");
-        } else if (limit > 3 && offset < 200) {
-            assertEq(deals.length, 3, "Deals count should be 3");
-            assertEq(deals[0].id, 1, "Deal id should be 1");
-            assertEq(deals[1].id, 2, "Deal id should be 2");
-            assertEq(deals[2].id, 3, "Deal id should be 3");
-        } else if (limit < 3) {
-            assertEq(deals.length, limit, "Deals count should be == limit");
-        }
+        assertEq(cids.length, 3, "cids count should be 3");
+        assertEq(cids[0], "bafyfoobar1", "cid should be bafyfoobar1");
+        assertEq(cids[1], "bafyfoobar2", "cid should be bafyfoobar2");
+        assertEq(cids[2], "bafyfoobar3", "cid should be bafyfoobar3");
+
+        // after 0, before 5, excluding both 0 and 5
+        cids = basinStorage.cidsInRange(pub, 0, 5);
+        assertEq(cids.length, 6, "cids count should be 6");
+        assertEq(cids[0], "bafyfoobar1", "cid should be bafyfoobar1");
+        assertEq(cids[1], "bafyfoobar2", "cid should be bafyfoobar2");
+        assertEq(cids[2], "bafyfoobar3", "cid should be bafyfoobar3");
+        assertEq(cids[3], "bafyfoobar10", "cid should be bafyfoobar10");
+        assertEq(cids[4], "bafyfoobar11", "cid should be bafyfoobar11");
+        assertEq(cids[5], "bafyfoobar12", "cid should be bafyfoobar12");
+
+        cids = basinStorage.cidsInRange(pub, 4, 5);
+        assertEq(cids.length, 0, "cids count should be 0");
+
+        // after == before raises error
+        vm.expectRevert(
+            abi.encodeWithSelector(BasinStorage.IncorrectRange.selector, 1, 1)
+        );
+        cids = basinStorage.cidsInRange(pub, 1, 1);
+        assertEq(cids.length, 0, "cids count should be 0");
+
+        // after > before raises error
+        vm.expectRevert(
+            abi.encodeWithSelector(BasinStorage.IncorrectRange.selector, 5, 4)
+        );
+        cids = basinStorage.cidsInRange(pub, 5, 4);
 
         pub = "654321"; // same owner different pub
-        deals = basinStorage.paginatedDeals(pub, offset, limit);
-        // all 3 deals were added @ block number 100
-        if (offset < 100) {
-            assertEq(deals.length, 0, "Deals count should be 0");
-        } else if (offset >= 100 && limit > 3) {
-            assertEq(deals.length, 3, "Deals count should be 3");
-            assertEq(deals[0].id, 4, "Deal id should be 4");
-            assertEq(deals[1].id, 5, "Deal id should be 5");
-            assertEq(deals[2].id, 6, "Deal id should be 6");
-        } else if (offset >= 100 && limit <= 3) {
-            assertEq(deals.length, limit, "Deals count should be == limit");
-        }
+        cids = basinStorage.cidsInRange(pub, 0, 5);
+        assertEq(cids.length, 3, "cids count should be 3");
+        assertEq(cids[0], "bafyfoobar4", "cid should be bafyfoobar4");
+        assertEq(cids[1], "bafyfoobar5", "cid should be bafyfoobar5");
+        assertEq(cids[2], "bafyfoobar6", "cid should be bafyfoobar6");
 
-        pub = "111111"; // pub of 0x123
-        deals = basinStorage.paginatedDeals(pub, offset, limit);
-        // all 3 deals were added @ block number 150
-        if (offset < 150) {
-            assertEq(deals.length, 0, "Deals count should be 0");
-        } else if (offset >= 150 && limit > 3) {
-            assertEq(deals.length, 3, "Deals count should be 3");
-            assertEq(deals[0].id, 7, "Deal id should be 7");
-            assertEq(deals[1].id, 8, "Deal id should be 8");
-            assertEq(deals[2].id, 9, "Deal id should be 9");
-        } else if (offset >= 150 && limit <= 3) {
-            assertEq(deals.length, limit, "Deals count should be == limit");
-        }
-    }
-}
+        cids = basinStorage.cidsInRange(pub, 1, 3);
+        assertEq(cids.length, 3, "cids count should be 3");
 
-contract BasinStorageLatestDealsTest is Test, HelperContract {
-    BasinStorage public basinStorage;
+        cids = basinStorage.cidsInRange(pub, 1, 2);
+        assertEq(cids.length, 0, "cids count should be 0");
 
-    constructor() {
-        basinStorage = new BasinStorage();
-        // give the contract the PUB_ADMIN_ROLE before adding a deal
-        basinStorage.grantRole(basinStorage.PUB_ADMIN_ROLE(), address(this));
-    }
-
-    function setUp() public {
-        HelperContract.setUpHelper(basinStorage);
-    }
-
-    function testLatestNDeals(uint16 n) public {
-        // get latest N deals where N > total deals
-        string memory pub = "123456";
-        BasinStorage.DealInfo[] memory deals = basinStorage.latestNDeals(
-            pub,
-            n
-        );
-
-        if (n > 6) {
-            assertEq(deals.length, 6, "Deals count should be 6");
-            // from 2nd (newer) batch
-            assertEq(deals[0].id, 10, "Deal id should be 10");
-            assertEq(deals[1].id, 11, "Deal id should be 11");
-            assertEq(deals[2].id, 12, "Deal id should be 12");
-            // from 1st (older) batch
-            assertEq(deals[3].id, 1, "Deal id should be 1");
-            assertEq(deals[4].id, 2, "Deal id should be 2");
-            assertEq(deals[5].id, 3, "Deal id should be 3");
-        } else {
-            assertEq(deals.length, n, "Deals count should be: n");
-        }
-
-        pub = "111111"; // pub of 0x123
-        deals = basinStorage.latestNDeals(pub, n);
-        if (n > 3) {
-            assertEq(deals.length, 3, "Deals count should be 3");
-            assertEq(deals[0].id, 7, "Deal id should be 10");
-            assertEq(deals[1].id, 8, "Deal id should be 11");
-            assertEq(deals[2].id, 9, "Deal id should be 12");
-        } else {
-            assertEq(deals.length, n, "Deals count should be: n");
-        }
-
-        pub = "654321";
-        deals = basinStorage.latestNDeals(pub, n);
-        if (n > 3) {
-            assertEq(deals.length, 3, "Deals count should be 3");
-            assertEq(deals[0].id, 4, "Deal id should be 4");
-            assertEq(deals[1].id, 5, "Deal id should be 5");
-            assertEq(deals[2].id, 6, "Deal id should be 6");
-        } else {
-            assertEq(deals.length, n, "Deals count should be: n");
-        }
-    }
-
-    function testpaginatedDeals(uint16 offset, uint16 limit) public {
-        vm.assume(offset >= 0 && offset <= 200);
-
-        // get latest N deals where N > total deals for an epoch range
-        string memory pub = "123456";
-        BasinStorage.DealInfo[] memory deals = basinStorage.paginatedDeals(
-            pub,
-            offset,
-            limit
-        );
-
-        if (limit >= 6 && offset == 200) {
-            assertEq(deals.length, 6, "Deals count should be 6");
-            // from 2nd (newer) batch
-            assertEq(deals[0].id, 10, "Deal id should be 10");
-            assertEq(deals[1].id, 11, "Deal id should be 11");
-            assertEq(deals[2].id, 12, "Deal id should be 12");
-            // from 1st (older) batch
-            assertEq(deals[3].id, 1, "Deal id should be 1");
-            assertEq(deals[4].id, 2, "Deal id should be 2");
-            assertEq(deals[5].id, 3, "Deal id should be 3");
-        } else if (limit >= 6 && offset < 200) {
-            assertEq(deals.length, 3, "Deals count should be 3");
-            assertEq(deals[0].id, 1, "Deal id should be 1");
-            assertEq(deals[1].id, 2, "Deal id should be 2");
-            assertEq(deals[2].id, 3, "Deal id should be 3");
-        } else if (limit > 3 && offset < 200) {
-            assertEq(deals.length, 3, "Deals count should be 3");
-            assertEq(deals[0].id, 1, "Deal id should be 1");
-            assertEq(deals[1].id, 2, "Deal id should be 2");
-            assertEq(deals[2].id, 3, "Deal id should be 3");
-        } else if (limit < 3) {
-            assertEq(deals.length, limit, "Deals count should be == limit");
-        }
-
-        pub = "654321"; // same owner different pub
-        deals = basinStorage.paginatedDeals(pub, offset, limit);
-        // all 3 deals were added @ block number 100
-        if (offset < 100) {
-            assertEq(deals.length, 0, "Deals count should be 0");
-        } else if (offset >= 100 && limit > 3) {
-            assertEq(deals.length, 3, "Deals count should be 3");
-            assertEq(deals[0].id, 4, "Deal id should be 4");
-            assertEq(deals[1].id, 5, "Deal id should be 5");
-            assertEq(deals[2].id, 6, "Deal id should be 6");
-        } else if (offset >= 100 && limit <= 3) {
-            assertEq(deals.length, limit, "Deals count should be == limit");
-        }
-
-        pub = "111111"; // pub of 0x123
-        deals = basinStorage.paginatedDeals(pub, offset, limit);
-        // all 3 deals were added @ block number 150
-        if (offset < 150) {
-            assertEq(deals.length, 0, "Deals count should be 0");
-        } else if (offset >= 150 && limit > 3) {
-            assertEq(deals.length, 3, "Deals count should be 3");
-            assertEq(deals[0].id, 7, "Deal id should be 7");
-            assertEq(deals[1].id, 8, "Deal id should be 8");
-            assertEq(deals[2].id, 9, "Deal id should be 9");
-        } else if (offset >= 150 && limit <= 3) {
-            assertEq(deals.length, limit, "Deals count should be == limit");
-        }
+        pub = "111111"; // pub of diff owner: 0x123
+        cids = basinStorage.cidsInRange(pub, 2, 5);
+        assertEq(cids.length, 3, "cids count should be 3");
+        assertEq(cids[0], "bafyfoobar7", "cid should be bafyfoobar7");
+        assertEq(cids[1], "bafyfoobar8", "cid should be bafyfoobar8");
+        assertEq(cids[2], "bafyfoobar9", "cid should be bafyfoobar9");
     }
 }

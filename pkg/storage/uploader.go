@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strconv"
 
 	w3s "github.com/web3-storage/go-w3s-client"
 )
@@ -74,6 +75,11 @@ func (u *FileUploader) Upload(ctx context.Context) error {
 		return fmt.Errorf("failed to get object reader: %v", err)
 	}
 
+	metadata, err := u.StorageClient.GetObjectMetadata(ctx, bucket, fname)
+	if err != nil {
+		return fmt.Errorf("failed to get object metadata: %v", err)
+	}
+
 	defer func() {
 		if err := reader.Close(); err != nil {
 			log.Fatalf("error when closing cloud storage reader: %v", err)
@@ -95,7 +101,18 @@ func (u *FileUploader) Upload(ctx context.Context) error {
 
 	fmt.Println("Upload successful :", cid)
 
-	err = u.DBClient.CreateJob(ctx, cid.String(), fname)
+	var timestamp *int64
+	if _, ok := metadata["timestamp"]; !ok {
+		fmt.Println("timestamp is missing", fname)
+	} else {
+		t, err := strconv.ParseInt(metadata["timestamp"], 10, 64)
+		if err != nil {
+			return fmt.Errorf("failed to parse timestamp: %v", err)
+		}
+		timestamp = &t
+	}
+
+	err = u.DBClient.CreateJob(ctx, cid.String(), fname, timestamp)
 	if err != nil {
 		return fmt.Errorf("failed to create deal: %v", err)
 	}

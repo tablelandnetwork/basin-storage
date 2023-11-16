@@ -201,7 +201,7 @@ func (c *MockBasinStorage) GetPendingNonce(
 	return 0, nil
 }
 
-// AddCIDs is a mock implementation of BasinStorage.AddCIDs.
+// AddCID is a mock implementation of BasinStorage.AddCID.
 func (c *MockBasinStorage) AddCID(
 	_ context.Context,
 	_ string,

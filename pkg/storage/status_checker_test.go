@@ -48,9 +48,8 @@ func TestStatusChecker(t *testing.T) {
 
 	expectedCidStr := getCIDFromBytes([]byte("data for myfile2")).String()
 
-	assert.Equal(t, 1, len(bsc.cids))		
+	assert.Equal(t, 1, len(bsc.cids))
 	assert.Equal(t, expectedCidStr, bsc.cids[0])
-		
 
 	var ts time.Time
 	for _, j := range db.jobs {

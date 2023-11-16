@@ -115,7 +115,7 @@ func (c *Client) GetPendingNonce(ctx context.Context) (uint64, error) {
 	return c.backend.PendingNonceAt(ctx, c.wallet.Address())
 }
 
-// AddCIDs adds the given cid to the BasinStorage smart contract for the given pub and ts.
+// AddCID adds the given cid to the BasinStorage smart contract for the given pub and ts.
 func (c *Client) AddCID(ctx context.Context,
 	pub string,
 	cid string,

@@ -11,7 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ipfs/go-cid"
 	mh "github.com/multiformats/go-multihash"
-	"github.com/tablelandnetwork/basin-storage/pkg/ethereum"
+
 	w3s "github.com/web3-storage/go-w3s-client"
 	w3http "github.com/web3-storage/go-w3s-client/http"
 )
@@ -181,14 +181,15 @@ func (m *mockCrdb) UpdateJobStatus(_ context.Context, cid []byte, activation tim
 
 // MockBasinStorage is the mock type for BasinStorage Contract.
 type MockBasinStorage struct {
-	deals []ethereum.BasinStorageDealInfo
+	cids []string
 }
 
 // EstimateGas is a mock implementation of BasinStorage.EstimateGas.
 func (c *MockBasinStorage) EstimateGas(
 	_ context.Context,
 	_ string,
-	_ []ethereum.BasinStorageDealInfo,
+	_ string,
+	_ uint64,
 ) (*bind.TransactOpts, error) {
 	return &bind.TransactOpts{}, nil
 }
@@ -200,36 +201,15 @@ func (c *MockBasinStorage) GetPendingNonce(
 	return 0, nil
 }
 
-// GetRecentDeals is a mock implementation of BasinStorage.GetRecentDeals.
-func (c *MockBasinStorage) GetRecentDeals(
-	_ context.Context, _ string,
-) (map[string]ethereum.BasinStorageDealInfo, error) {
-	d1 := ethereum.BasinStorageDealInfo{
-		Id:           1,
-		SelectorPath: "foo/bar",
-		Cid:          getCIDFromBytes([]byte("data for myfile")).String(),
-	}
-	d2 := ethereum.BasinStorageDealInfo{
-		Id:           2,
-		SelectorPath: "foo/bar",
-		Cid:          getCIDFromBytes([]byte("data for myfile")).String(),
-	}
-	rds := map[string]ethereum.BasinStorageDealInfo{
-		d1.Cid: d1,
-		d2.Cid: d2,
-	}
-
-	return rds, nil
-}
-
-// AddDeals is a mock implementation of BasinStorage.AddDeals.
-func (c *MockBasinStorage) AddDeals(
+// AddCIDs is a mock implementation of BasinStorage.AddCIDs.
+func (c *MockBasinStorage) AddCID(
 	_ context.Context,
 	_ string,
-	deals []ethereum.BasinStorageDealInfo,
+	cids string,
+	_ uint64,
 	_ *bind.TransactOpts,
 ) error {
 	time.Sleep(1 * time.Second) // fake delay
-	c.deals = append(c.deals, deals...)
+	c.cids = append(c.cids, cids)
 	return nil
 }

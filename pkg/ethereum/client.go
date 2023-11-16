@@ -18,14 +18,15 @@ import (
 type BasinStorage interface {
 	EstimateGas(ctx context.Context,
 		pub string,
-		deals []BasinStorageDealInfo,
+		cid string,
+		timestamp uint64,
 	) (*bind.TransactOpts, error)
 	GetPendingNonce(ctx context.Context) (uint64, error)
-	GetRecentDeals(ctx context.Context,
-		pub string) (map[string]BasinStorageDealInfo, error)
-	AddDeals(ctx context.Context,
+	AddCID(ctx context.Context,
 		pub string,
-		deals []BasinStorageDealInfo, txOpts *bind.TransactOpts) error
+		cid string,
+		timestamp uint64,
+		txOpts *bind.TransactOpts) error
 }
 
 // Client is the Ethereum implementation of the registry client.
@@ -60,11 +61,12 @@ func NewClient(
 	}, nil
 }
 
-// EstimateGas estimates the gas required to execute the AddDeals function of the BasinStorage smart contract.
+// EstimateGas estimates the gas required to execute the AddCID function of the BasinStorage smart contract.
 func (c *Client) EstimateGas(
 	ctx context.Context,
 	pub string,
-	deals []BasinStorageDealInfo,
+	cid string,
+	timestamp uint64,
 ) (*bind.TransactOpts, error) {
 	txOpts, err := bind.NewKeyedTransactorWithChainID(
 		c.wallet.PrivateKey(),
@@ -84,7 +86,8 @@ func (c *Client) EstimateGas(
 		return nil, fmt.Errorf("failed to parse ABI: %v", err)
 	}
 
-	data, err := BasinStorageABI.Pack("addDeals", []interface{}{pub, deals}...)
+	data, err := BasinStorageABI.Pack(
+		"addCID", []interface{}{pub, cid, big.NewInt(int64(timestamp))}...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to abi pack: %v", err)
 	}
@@ -112,36 +115,18 @@ func (c *Client) GetPendingNonce(ctx context.Context) (uint64, error) {
 	return c.backend.PendingNonceAt(ctx, c.wallet.Address())
 }
 
-// GetRecentDeals returns the latest 10 deals added to the BasinStorage smart contract for the given publisher.
-func (c *Client) GetRecentDeals(ctx context.Context, pub string) (map[string]BasinStorageDealInfo, error) {
-	callOpts := &bind.CallOpts{
-		Pending: true,
-		Context: ctx,
-	}
-	latestDeals, err := c.contract.LatestNDeals(callOpts, pub, big.NewInt(10))
-	if err != nil {
-		return nil, fmt.Errorf("failed to get latest 10 deals: %v", err)
-	}
-
-	// index recent deals in a map
-	recentDeals := make(map[string]BasinStorageDealInfo)
-	for _, d := range latestDeals {
-		recentDeals[d.Cid] = d
-	}
-
-	return recentDeals, nil
-}
-
-// AddDeals adds the given deals to the BasinStorage smart contract for the given pub.
-func (c *Client) AddDeals(ctx context.Context,
+// AddCIDs adds the given cid to the BasinStorage smart contract for the given pub and ts.
+func (c *Client) AddCID(ctx context.Context,
 	pub string,
-	deals []BasinStorageDealInfo,
+	cid string,
+	timestamp uint64,
 	txOpts *bind.TransactOpts,
 ) error {
 	// TODO: implement retry logic
-	tx, err := c.contract.AddDeals(txOpts, pub, deals)
+	tx, err := c.contract.AddCID(
+		txOpts, pub, cid, big.NewInt(int64(timestamp)))
 	if err != nil {
-		return fmt.Errorf("failed to add deals: %v", err)
+		return fmt.Errorf("failed to add cid: %v", err)
 	}
 	fmt.Printf("tx sent: %v \n", tx.Hash())
 	time.Sleep(150 * time.Second)

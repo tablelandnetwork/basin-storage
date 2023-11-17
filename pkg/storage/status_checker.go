@@ -10,7 +10,6 @@ import (
 	"github.com/ipfs/go-cid"
 	"github.com/tablelandnetwork/basin-storage/pkg/ethereum"
 	"github.com/textileio/go-tableland/pkg/wallet"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -29,18 +28,16 @@ type StatusCheckerConfig struct {
 
 // StatusChecker checks the status of a job and updates the status in the DB.
 type StatusChecker struct {
-	// DealClient is a w3s.Client instance used to interact with W3S.
+	// StatusClient is a w3s.Client instance used to interact with W3S.
 	StatusClient w3s.Client
 	// DBClient is a Crdb instance used to interact with CockroachDB.
 	DBClient Crdb
 	// contractClient is a BasinStorage contract interface
 	contractClient ethereum.BasinStorage
-	// simulated run flag (for testing by triggering the status checker)
-	simulated bool
 }
 
 // NewStatusChecker creates a new StatusChecker.
-func NewStatusChecker(ctx context.Context, cfg *StatusCheckerConfig, sim bool) (*StatusChecker, error) {
+func NewStatusChecker(ctx context.Context, cfg *StatusCheckerConfig) (*StatusChecker, error) {
 	wallet, err := wallet.NewWallet(cfg.PrivateKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize wallet: %v", err)
@@ -96,7 +93,6 @@ func NewStatusChecker(ctx context.Context, cfg *StatusCheckerConfig, sim bool) (
 		StatusClient:   w3sClient,
 		DBClient:       dbClient,
 		contractClient: ethClient,
-		simulated:      sim,
 	}, nil
 }
 
@@ -112,23 +108,29 @@ func (sc *StatusChecker) getStatus(ctx context.Context, CIDBytes []byte) (*w3s.S
 	return status, nil
 }
 
-// addDeals prepares Tx and adds deals to the contract.
-func (sc *StatusChecker) addDeals(
+// addCID prepares Tx to add a CID to the contract.
+func (sc *StatusChecker) addCID(
 	ctx context.Context,
 	pub string,
-	deals []ethereum.BasinStorageDealInfo,
-	nonce uint64,
+	cid string,
+	timestamp int64,
 ) error {
 	// prepare tx opts with gas related params
-	txOpts, err := sc.contractClient.EstimateGas(ctx, pub, deals)
+	txOpts, err := sc.contractClient.EstimateGas(ctx, pub, cid, timestamp)
 	if err != nil {
-		return fmt.Errorf("failed to estimate gas for adding deals: %v", err)
+		return fmt.Errorf("failed to estimate gas for adding cid: %v", err)
 	}
+
 	// set nonce
+	nonce, err := sc.contractClient.GetPendingNonce(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get nonce: %v", err)
+	}
 	txOpts.Nonce = big.NewInt(int64(nonce))
-	fmt.Println("Adding deals with nonce: ", nonce)
-	if err = sc.contractClient.AddDeals(ctx, pub, deals, txOpts); err != nil {
-		return fmt.Errorf("failed to add deals to contract: %v", err)
+
+	fmt.Println("Adding cid: ", pub, cid, timestamp, nonce)
+	if err = sc.contractClient.AddCID(ctx, pub, cid, timestamp, txOpts); err != nil {
+		return fmt.Errorf("failed to add cid to contract: %v", err)
 	}
 
 	return nil
@@ -148,39 +150,40 @@ func (sc *StatusChecker) updateJobStatus(
 	return nil
 }
 
-// getActiveDeals returns active deals for a job.
-func (sc *StatusChecker) getActiveDeals(
+// checkActiveDeals returns true if there are any
+// active deals for the job.
+func (sc *StatusChecker) checkActiveDeals(
 	status *w3s.Status,
 	job UnfinishedJob,
-) []ethereum.BasinStorageDealInfo {
-	deals := []ethereum.BasinStorageDealInfo{}
+) bool {
 	// when there are no deals returned by W3S
 	if len(status.Deals) == 0 {
 		fmt.Printf(
 			"no deals found for job: %s, %x \n",
 			job.Pub, job.Cid)
-		return deals
+		return false
 	}
+
+	// when deals exist, check if they are active
+	deals := []w3s.Deal{}
 	for _, d := range takeActiveDeals(status.Deals) {
 		// filter out deals that are not active yet
-		deals = append(deals, ethereum.BasinStorageDealInfo{
-			Id:           d.DealID,
-			SelectorPath: d.DataModelSelector,
-			Cid:          status.Cid.String(),
-		})
+		fmt.Printf("deal status: %s \n", d.Status)
+		deals = append(deals, d)
 	}
 	if len(deals) == 0 {
 		fmt.Printf(
 			"deals exist, but are not activated: %s, %x \n",
 			job.Pub, job.Cid)
+		return false
 	}
-	return deals
+
+	return true
 }
 
 func (sc *StatusChecker) processJob(
 	ctx context.Context,
 	job UnfinishedJob,
-	nonce uint64,
 ) error {
 	fmt.Printf("checking status for job: %s, %x\n", job.Pub, job.Cid)
 	pub := fmt.Sprintf("%s.%s", job.Pub.Namespace, job.Pub.Relation)
@@ -191,41 +194,35 @@ func (sc *StatusChecker) processJob(
 		return fmt.Errorf("failed to get status: %v", err)
 	}
 
-	// Find active deals for the jobs
-	deals := sc.getActiveDeals(status, job)
-	if len(deals) == 0 {
-		fmt.Println("skipping adding deals")
+	// Find active activeDeals for the jobs
+	activeDeals := sc.checkActiveDeals(status, job)
+	if !activeDeals {
+		fmt.Println("skipping indexing cid")
 		return nil
 	}
 
-	if !sc.simulated {
-		fmt.Printf(
-			"not simulated: checking for duplicates: %s, %x \n",
-			pub, job.Cid)
-		deals, err = sc.removeDuplicateDeals(ctx, pub, deals)
-		// Don't fail if we can't remove duplicates, log it
-		// and continue to add deals
-		if err != nil {
-			fmt.Println("failed to remove duplicates: ", err)
-		}
+	cid, err := cid.Cast(job.Cid)
+	if err != nil {
+		return fmt.Errorf("failed to cast cid from bytes: %v", err)
 	}
 
-	if len(deals) > 0 {
-		if err := sc.addDeals(ctx, pub, deals, nonce); err != nil {
-			return fmt.Errorf("failed to add deals: %v", err)
-		}
+	var ts int64
+	if job.Timestamp == nil {
+		ts = int64(0)
 	} else {
-		fmt.Printf(
-			"skipping: all deals are already indexed: %s, %x \n",
-			pub, job.Cid)
+		ts = *job.Timestamp
+	}
+
+	if err := sc.addCID(ctx, pub, cid.String(), ts); err != nil {
+		return fmt.Errorf("failed to add cid: %v", err)
 	}
 
 	return sc.updateJobStatus(ctx, job, status)
 }
 
 // ProcessJobs checks the status of all unfinished jobs.
-// If a job has deals, it adds the deals to the BasinStorage contract.
-// If a job has no deals, it does nothing.
+// If a job has active deals, it adds the "CID" to the BasinStorage contract.
+// If a job has no active deals, it does nothing.
 // If a job has already been activated, it does nothing.
 // Finally, it updates the job status in the DB.
 func (sc *StatusChecker) ProcessJobs(ctx context.Context) error {
@@ -234,24 +231,10 @@ func (sc *StatusChecker) ProcessJobs(ctx context.Context) error {
 		return fmt.Errorf("failed to get unfinished jobs: %v", err)
 	}
 
-	// get current nonce
-	nonce, err := sc.contractClient.GetPendingNonce(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get nonce: %v", err)
-	}
-
-	errs, ctx := errgroup.WithContext(ctx)
-	for idx, job := range unfinishedJobs {
-		idx := idx
-		ctx := ctx
-		job := job
-		errs.Go(func() error {
-			return sc.processJob(ctx, job, nonce+uint64(idx))
-		})
-	}
-
-	if err := errs.Wait(); err != nil {
-		return fmt.Errorf("one or more jobs failed: %v", err)
+	for _, job := range unfinishedJobs {
+		if err := sc.processJob(ctx, job); err != nil {
+			return fmt.Errorf("failed to process job: %v", err)
+		}
 	}
 
 	return nil
@@ -277,33 +260,4 @@ func takeActiveDeals(deals []w3s.Deal) []w3s.Deal {
 	}
 
 	return activeDeals
-}
-
-func (sc *StatusChecker) removeDuplicateDeals(
-	ctx context.Context, pub string,
-	deals []ethereum.BasinStorageDealInfo,
-) ([]ethereum.BasinStorageDealInfo, error) {
-	// filter out deals that are already in the contract
-	// by looking at the recent deals.
-	// due to db failure and retries, it may happen that
-	// deals are already added in the previous attempt
-	// to avoid duplicates we filter out deals that are
-	// already in the contract.
-	recentDeals, err := sc.contractClient.GetRecentDeals(ctx, pub)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get recent deals: %v", err)
-	}
-
-	deDupDeals := []ethereum.BasinStorageDealInfo{}
-	for _, d := range deals {
-		if _, ok := recentDeals[d.Cid]; !ok {
-			deDupDeals = append(deDupDeals, d)
-		} else {
-			fmt.Println(
-				"deal already exists, skipping",
-				d.Id, d.SelectorPath)
-		}
-	}
-
-	return deDupDeals, nil
 }

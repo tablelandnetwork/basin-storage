@@ -59,7 +59,7 @@ func StatusChecker(w http.ResponseWriter, r *http.Request) {
 		PrivateKey:       os.Getenv("PRIVATE_KEY"),
 		ChainID:          os.Getenv("CHAIN_ID"),
 		BackendURL:       "https://api.calibration.node.glif.io/rpc/v1", // TODO: move to config
-		BasinStorageAddr: "0xd0ee658f1203302e35B9B9E3A73CB3472A2C2373",  // TODO: move to config
+		BasinStorageAddr: "0xaB16d51Fa80EaeAF9668CE102a783237A045FC37",  // TODO: move to config
 	}
 
 	if err := r.ParseForm(); err != nil {
@@ -68,12 +68,8 @@ func StatusChecker(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, errMsg, http.StatusInternalServerError)
 		return
 	}
-	simulated := false
-	if r.Form.Get("simulated") == "true" {
-		simulated = true
-	}
 
-	sc, err := storage.NewStatusChecker(ctx, cfg, simulated)
+	sc, err := storage.NewStatusChecker(ctx, cfg)
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to initialize status checker: %v", err)
 		fmt.Println(errMsg) // todo: enbale proper logging

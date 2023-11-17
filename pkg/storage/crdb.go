@@ -108,8 +108,8 @@ func (db *DBClient) CreateJob(ctx context.Context, cidStr string, fname string, 
 	return nil
 }
 
-// UnfinishedJob represents a job in db where
-// corresponding deals are still inactive.
+// UnfinishedJob represents a job in db that
+// tracks deals on Filecoin.
 type UnfinishedJob struct {
 	Pub       Pub
 	Cid       []byte
@@ -120,7 +120,7 @@ type UnfinishedJob struct {
 // UnfinishedJobs returns all currently unfinished jobs in the db.
 func (db *DBClient) UnfinishedJobs(ctx context.Context) ([]UnfinishedJob, error) {
 	query := `
-		SELECT namespaces.name, jobs.cid, jobs.relation
+		SELECT namespaces.name, jobs.cid, jobs.relation, jobs.timestamp
 		FROM namespaces, jobs
 		WHERE namespaces.id = jobs.ns_id and activated is NULL
 	`
@@ -140,15 +140,23 @@ func (db *DBClient) UnfinishedJobs(ctx context.Context) ([]UnfinishedJob, error)
 		var cid []byte
 		var nsName string
 		var relation string
-		if err := rows.Scan(&nsName, &cid, &relation); err != nil {
+		var timestamp sql.NullInt64
+		if err := rows.Scan(&nsName, &cid, &relation, &timestamp); err != nil {
 			return nil, fmt.Errorf("failed to scan row: %v", err)
+		}
+		var t *int64
+		if timestamp.Valid {
+			t = &timestamp.Int64
+		} else {
+			t = nil
 		}
 		result = append(result, UnfinishedJob{
 			Pub: Pub{
 				Namespace: nsName,
 				Relation:  relation,
 			},
-			Cid: cid,
+			Cid:       cid,
+			Timestamp: t,
 		})
 	}
 

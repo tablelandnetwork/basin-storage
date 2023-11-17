@@ -5,9 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
-	"net/url"
 	"os"
-	"strings"
 	"testing"
 	"time"
 
@@ -19,9 +17,7 @@ import (
 
 func buildCheckerRequest(t *testing.T) *http.Request {
 	urlStr := fmt.Sprintf("http://localhost:%s", functionsPort)
-	data := url.Values{}
-	data.Set("simulated", "true")
-	req, err := http.NewRequest("POST", urlStr, strings.NewReader(data.Encode()))
+	req, err := http.NewRequest("POST", urlStr, nil)
 	require.NoError(t, err)
 
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
@@ -37,7 +33,7 @@ func TestChecker(t *testing.T) {
 	pk := os.Getenv("PRIVATE_KEY")
 	chainIDStr := os.Getenv("CHAIN_ID")
 	backendURL := "https://api.calibration.node.glif.io/rpc/v1"
-	basinStorageAddr := "0x4b1f4d8100e51afe644b189d77784dec225e0596"
+	basinStorageAddr := "0xaB16d51Fa80EaeAF9668CE102a783237A045FC37"
 	crdbConn := fmt.Sprintf(
 		"postgresql://root@%s/basin_test?sslmode=disable",
 		dbHost)

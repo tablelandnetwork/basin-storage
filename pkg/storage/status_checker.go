@@ -210,7 +210,7 @@ func (sc *StatusChecker) processJob(
 	if job.Timestamp == nil {
 		ts = int64(0)
 	} else {
-		ts = int64(*job.Timestamp)
+		ts = *job.Timestamp
 	}
 
 	if err := sc.addCID(ctx, pub, cid.String(), ts); err != nil {

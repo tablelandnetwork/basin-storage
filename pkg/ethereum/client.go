@@ -19,13 +19,13 @@ type BasinStorage interface {
 	EstimateGas(ctx context.Context,
 		pub string,
 		cid string,
-		timestamp uint64,
+		timestamp int64,
 	) (*bind.TransactOpts, error)
 	GetPendingNonce(ctx context.Context) (uint64, error)
 	AddCID(ctx context.Context,
 		pub string,
 		cid string,
-		timestamp uint64,
+		timestamp int64,
 		txOpts *bind.TransactOpts) error
 }
 
@@ -66,7 +66,7 @@ func (c *Client) EstimateGas(
 	ctx context.Context,
 	pub string,
 	cid string,
-	timestamp uint64,
+	timestamp int64,
 ) (*bind.TransactOpts, error) {
 	txOpts, err := bind.NewKeyedTransactorWithChainID(
 		c.wallet.PrivateKey(),
@@ -87,7 +87,7 @@ func (c *Client) EstimateGas(
 	}
 
 	data, err := BasinStorageABI.Pack(
-		"addCID", []interface{}{pub, cid, big.NewInt(int64(timestamp))}...)
+		"addCID", []interface{}{pub, cid, big.NewInt(timestamp)}...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to abi pack: %v", err)
 	}
@@ -119,12 +119,12 @@ func (c *Client) GetPendingNonce(ctx context.Context) (uint64, error) {
 func (c *Client) AddCID(ctx context.Context,
 	pub string,
 	cid string,
-	timestamp uint64,
+	timestamp int64,
 	txOpts *bind.TransactOpts,
 ) error {
 	// TODO: implement retry logic
 	tx, err := c.contract.AddCID(
-		txOpts, pub, cid, big.NewInt(int64(timestamp)))
+		txOpts, pub, cid, big.NewInt(timestamp))
 	if err != nil {
 		return fmt.Errorf("failed to add cid: %v", err)
 	}

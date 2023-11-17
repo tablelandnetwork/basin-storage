@@ -113,7 +113,7 @@ func (sc *StatusChecker) addCID(
 	ctx context.Context,
 	pub string,
 	cid string,
-	timestamp uint64,
+	timestamp int64,
 ) error {
 	// prepare tx opts with gas related params
 	txOpts, err := sc.contractClient.EstimateGas(ctx, pub, cid, timestamp)
@@ -206,11 +206,11 @@ func (sc *StatusChecker) processJob(
 		return fmt.Errorf("failed to cast cid from bytes: %v", err)
 	}
 
-	var ts uint64
+	var ts int64
 	if job.Timestamp == nil {
-		ts = uint64(0)
+		ts = int64(0)
 	} else {
-		ts = uint64(*job.Timestamp)
+		ts = int64(*job.Timestamp)
 	}
 
 	if err := sc.addCID(ctx, pub, cid.String(), ts); err != nil {

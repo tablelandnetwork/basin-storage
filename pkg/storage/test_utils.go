@@ -189,7 +189,7 @@ func (c *MockBasinStorage) EstimateGas(
 	_ context.Context,
 	_ string,
 	_ string,
-	_ uint64,
+	_ int64,
 ) (*bind.TransactOpts, error) {
 	return &bind.TransactOpts{}, nil
 }
@@ -206,7 +206,7 @@ func (c *MockBasinStorage) AddCID(
 	_ context.Context,
 	_ string,
 	cids string,
-	_ uint64,
+	_ int64,
 	_ *bind.TransactOpts,
 ) error {
 	time.Sleep(1 * time.Second) // fake delay

@@ -5,6 +5,7 @@ import (
 	"context"
 	"io/fs"
 	"testing"
+	"time"
 
 	"github.com/ipfs/go-cid"
 	"github.com/tablelandnetwork/basin-storage/mocks"
@@ -23,8 +24,9 @@ func TestUploader(t *testing.T) {
 	// Mocking the returned reader for the GetObjectReader method
 	mockReadCloser := &MockReadCloser{Reader: bytes.NewReader(mockData())}
 	mockGCS.On("GetObjectReader", ctx, "mybucket", fname).Return(mockReadCloser, nil)
-
-	mockGCS.On("GetObjectMetadata", ctx, "mybucket", fname).Return(map[string]string{"timestamp": "1234"}, nil)
+	mockGCS.On("GetObjectMetadata", ctx, "mybucket", fname).Return(
+		map[string]string{"timestamp": "1700248832", "cache_duration": "100"}, nil,
+	)
 
 	uploader := FileUploader{
 		StorageClient: mockGCS,
@@ -71,5 +73,6 @@ func TestUploader(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, getCIDFromBytes(mockData()).String(), cid.String())
 
-	assert.Equal(t, int64(1234), *jobs[0].Timestamp)
+	assert.Equal(t, int64(1700248832), *jobs[0].Timestamp)
+	assert.Equal(t, time.Unix(1700248832+100, 0), jobs[0].ExpiresAt)
 }

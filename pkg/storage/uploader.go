@@ -112,7 +112,16 @@ func (u *FileUploader) Upload(ctx context.Context) error {
 		timestamp = &t
 	}
 
-	err = u.DBClient.CreateJob(ctx, cid.String(), fname, timestamp)
+	var cacheDutation int64
+	if _, ok := metadata["cache_duration"]; ok {
+		duration, err := strconv.ParseInt(metadata["cache_duration"], 10, 64)
+		if err != nil {
+			return fmt.Errorf("failed to parse timestamp: %v", err)
+		}
+		cacheDutation = duration
+	}
+
+	err = u.DBClient.CreateJob(ctx, cid.String(), fname, timestamp, cacheDutation)
 	if err != nil {
 		return fmt.Errorf("failed to create deal: %v", err)
 	}

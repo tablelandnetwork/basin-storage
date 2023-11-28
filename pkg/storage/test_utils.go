@@ -143,7 +143,9 @@ type mockCrdb struct {
 	jobs []UnfinishedJob
 }
 
-func (m *mockCrdb) CreateJob(_ context.Context, cidStr string, fname string, timestamp *int64) error {
+func (m *mockCrdb) CreateJob(
+	_ context.Context, cidStr string, fname string, timestamp *int64, cacheDuration int64,
+) error {
 	cid, _ := cid.Decode(cidStr)
 	pub, err := extractPub(fname)
 	if err != nil {
@@ -154,6 +156,7 @@ func (m *mockCrdb) CreateJob(_ context.Context, cidStr string, fname string, tim
 		Cid:       cid.Bytes(),
 		Activated: time.Time{},
 		Timestamp: timestamp,
+		ExpiresAt: time.Unix(*timestamp+cacheDuration, 0),
 	})
 	return nil
 }

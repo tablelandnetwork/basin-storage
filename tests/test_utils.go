@@ -89,10 +89,24 @@ func setupDB(t *testing.T, db *sql.DB) {
 			relation TEXT NOT NULL,
 			activated TIMESTAMP,
 			timestamp BIGINT,
+			cache_path TEXT,
+			expires_at TIMESTAMP,
 			CONSTRAINT fk_namespace
 			FOREIGN KEY(ns_id)
 			REFERENCES namespaces(id)
 		)`)
+	require.NoError(t, err)
+
+	_, err = db.Exec(
+		`CREATE TABLE IF NOT EXISTS cache_config
+		(
+			ns_id BIGINT NOT NULL,
+			relation TEXT NOT NULL,
+			duration BIGINT,
+			CONSTRAINT fk_namespace
+			FOREIGN KEY(ns_id)
+			REFERENCES namespaces(id)
+		);`)
 	require.NoError(t, err)
 }
 

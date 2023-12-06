@@ -14,7 +14,7 @@ contract BasinStorage is AccessControl {
     mapping(address => string[]) private _ownerPubs;
 
     // CID count by pub
-    mapping(string => uint256) private _pubCIDCount;
+    mapping(string => uint256) pubCIDCount;
 
     // CID storage indexes by pub, indexed by epoch.
     mapping(string pub => mapping(uint256 epoch => string[])) private _cids;
@@ -80,7 +80,7 @@ contract BasinStorage is AccessControl {
             revert PubDoesNotExist(pub);
         }
         _cids[pub][timestamp].push(cid);
-        _pubCIDCount[pub]++;
+        pubCIDCount[pub]++;
         emit CIDAdded(cid, pub, owner);
     }
 

@@ -103,7 +103,7 @@ contract BasinStorage is AccessControl {
         if (aftr >= before) {
             revert IncorrectRange(aftr, before);
         }
-        string[] memory cids = new string[](_pubCIDCount[pub]);
+        string[] memory cids = new string[](pubCIDCount[pub]);
         uint256 lastCIDFetchedIdx = 0;
 
         uint256 epoch = aftr + 1;

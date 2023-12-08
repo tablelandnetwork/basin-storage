@@ -57,6 +57,6 @@ func (r *GCSClient) ParseEvent() (string, string, error) {
 	if err := protojson.Unmarshal(r.EventData, &data); err != nil {
 		return "", "", fmt.Errorf("protojson.Unmarshal: %w", err)
 	}
-	fmt.Println(data.GetMetadata())
+
 	return data.GetBucket(), data.GetName(), nil
 }

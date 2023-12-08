@@ -25,7 +25,7 @@ func TestUploader(t *testing.T) {
 	mockReadCloser := &MockReadCloser{Reader: bytes.NewReader(mockData())}
 	mockGCS.On("GetObjectReader", ctx, "mybucket", fname).Return(mockReadCloser, nil)
 	metadata := map[string]string{
-		"timestamp":      "1234",
+		"timestamp":      "1700248832",
 		"cache_duration": "100",
 		"signature":      "25ee57b44817278828f3ad3f47dfe440cf2f729524b7ae445a933cf78e22d8583084048b47676f8c64daae85b937dda79ee2596b924710eebbff94652e5e2f9500", // nolint:lll
 		"hash":           "f00a989b4f86fd3bd6d347b03c59bba377bcaac57f3b43addfad9da1bca51938",

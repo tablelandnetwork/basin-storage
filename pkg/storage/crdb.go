@@ -8,7 +8,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ipfs/go-cid"
+
 	// Blank-import libpq package for SQL.
 	_ "github.com/lib/pq"
 	"github.com/pkg/errors"
@@ -39,9 +41,24 @@ func createJobTx(
 		_ = cachePath.Scan(fname)
 	}
 
-	_, err := tx.Exec(
-		"insert into jobs (ns_id, cid, relation, timestamp, cache_path, expires_at, sign, hash) values($1, $2, $3, $4, $5, $6, $7, $8)",
-		nsID, cidBytes, pub.Relation, timestamp, sign, hash)
+	signBytes, err := hexutil.Decode("0x" + sign)
+	if err != nil {
+		return errors.Wrap(err, "decoding sign")
+	}
+
+	hashBytes, err := hexutil.Decode("0x" + hash)
+	if err != nil {
+		return errors.Wrap(err, "decoding hash")
+	}
+
+	_, err = tx.Exec(
+		`insert into jobs (
+			ns_id, cid, relation, timestamp, cache_path, expires_at, sign, hash
+		) 
+		values (
+			$1, $2, $3, $4, $5, $6, $7, $8
+		)`,
+		nsID, cidBytes, pub.Relation, timestamp, cachePath, expiresAt, signBytes, hashBytes)
 	if err != nil {
 		return errors.Wrap(err, "updating record")
 	}
@@ -51,7 +68,15 @@ func createJobTx(
 
 // Crdb is an interface that defines the methods to interact with CockroachDB.
 type Crdb interface {
-	CreateJob(ctx context.Context, cidStr string, fileName string, timestamp *int64, cacheDuration int64, sign, hash string) error
+	CreateJob(
+		ctx context.Context,
+		cidStr string,
+		fileName string,
+		timestamp *int64,
+		cacheDuration int64,
+		sign string,
+		hash string,
+	) error
 	UnfinishedJobs(ctx context.Context) ([]UnfinishedJob, error)
 	UpdateJobStatus(ctx context.Context, cid []byte, activation time.Time) error
 }

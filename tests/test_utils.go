@@ -42,6 +42,17 @@ func uploadRandomBytesToGCS(t *testing.T, data []byte, bucketName, objectName st
 	_, err = wc.Write(data)
 	require.NoError(t, err)
 	require.NoError(t, wc.Close())
+
+	// Set the metadata
+	metadata := map[string]string{
+		"signature": "25ee57b44817278828f3ad3f47dfe440cf2f729524b7ae445a933cf78e22d8583084048b47676f8c64daae85b937dda79ee2596b924710eebbff94652e5e2f9500", // nolint
+		"hash":      "f00a989b4f86fd3bd6d347b03c59bba377bcaac57f3b43addfad9da1bca51938",                                                                   // nolint
+	}
+	attrs := storage.ObjectAttrsToUpdate{
+		Metadata: metadata,
+	}
+	_, err = object.Update(ctx, attrs)
+	require.NoError(t, err)
 }
 
 func deleteObjectFromGCS(t *testing.T, bucketName, objectName string) {
@@ -91,6 +102,8 @@ func setupDB(t *testing.T, db *sql.DB) {
 			timestamp BIGINT,
 			cache_path TEXT,
 			expires_at TIMESTAMP,
+			sign bytea,
+			hash bytea,
 			CONSTRAINT fk_namespace
 			FOREIGN KEY(ns_id)
 			REFERENCES namespaces(id)

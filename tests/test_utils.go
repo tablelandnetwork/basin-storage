@@ -102,7 +102,7 @@ func setupDB(t *testing.T, db *sql.DB) {
 			timestamp BIGINT,
 			cache_path TEXT,
 			expires_at TIMESTAMP,
-			sign bytea,
+			signature bytea,
 			hash bytea,
 			CONSTRAINT fk_namespace
 			FOREIGN KEY(ns_id)

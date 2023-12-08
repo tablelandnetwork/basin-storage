@@ -35,10 +35,10 @@ uploader-deploy:
 	--region=us-east1 \
 	--source=. \
 	--entry-point=Uploader \
-	--trigger-event-filters="type=google.cloud.storage.object.v1.finalized" \
+	--trigger-event-filters="type=google.cloud.storage.object.v1.metadataUpdated" \
 	--trigger-event-filters="bucket=tableland-basin-staging"  \
 	--memory 32768MB \
-	--timeout 3600s \
+	--timeout 540s \
 	--env-vars-file uploader.env.yml
 .PHONY: uploader-deploy
 

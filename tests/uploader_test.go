@@ -47,7 +47,7 @@ func buildUploadRequest(t *testing.T, bucketName, objectName string) *http.Reque
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("ce-id", "1234567890")
 	req.Header.Set("ce-specversion", "1.0")
-	req.Header.Set("ce-type", "google.cloud.storage.object.v1.finalized")
+	req.Header.Set("ce-type", "google.cloud.storage.object.v1.metadataUpdated")
 	req.Header.Set("ce-time", "2020-08-08T00:11:44.895529672Z")
 	req.Header.Set("ce-source", source)
 

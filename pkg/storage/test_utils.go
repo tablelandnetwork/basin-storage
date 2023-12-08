@@ -144,7 +144,13 @@ type mockCrdb struct {
 }
 
 func (m *mockCrdb) CreateJob(
-	_ context.Context, cidStr string, fname string, timestamp *int64, cacheDuration int64,
+	_ context.Context,
+	cidStr string,
+	fname string,
+	timestamp *int64,
+	cacheDuration int64,
+	_ string,
+	_ string,
 ) error {
 	cid, _ := cid.Decode(cidStr)
 	pub, err := extractPub(fname)

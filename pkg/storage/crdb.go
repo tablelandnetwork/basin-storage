@@ -53,7 +53,7 @@ func createJobTx(
 
 	_, err = tx.Exec(
 		`insert into jobs (
-			ns_id, cid, relation, timestamp, cache_path, expires_at, sign, hash
+			ns_id, cid, relation, timestamp, cache_path, expires_at, signature, hash
 		) 
 		values (
 			$1, $2, $3, $4, $5, $6, $7, $8

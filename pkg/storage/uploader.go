@@ -133,7 +133,7 @@ func (u *FileUploader) Upload(ctx context.Context) error {
 
 	err = u.DBClient.CreateJob(ctx, cid.String(), fname, timestamp, cacheDutation, sign, hash)
 	if err != nil {
-		return fmt.Errorf("failed to create deal: %v", err)
+		return err
 	}
 
 	fmt.Println("DB insert successful", fname)

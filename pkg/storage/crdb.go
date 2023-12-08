@@ -3,12 +3,12 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"strings"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ipfs/go-cid"
 
 	// Blank-import libpq package for SQL.
@@ -41,12 +41,12 @@ func createJobTx(
 		_ = cachePath.Scan(fname)
 	}
 
-	signBytes, err := hexutil.Decode("0x" + sign)
+	signBytes, err := hex.DecodeString(sign)
 	if err != nil {
 		return errors.Wrap(err, "decoding sign")
 	}
 
-	hashBytes, err := hexutil.Decode("0x" + hash)
+	hashBytes, err := hex.DecodeString(hash)
 	if err != nil {
 		return errors.Wrap(err, "decoding hash")
 	}

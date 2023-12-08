@@ -121,7 +121,17 @@ func (u *FileUploader) Upload(ctx context.Context) error {
 		cacheDutation = duration
 	}
 
-	err = u.DBClient.CreateJob(ctx, cid.String(), fname, timestamp, cacheDutation)
+	sign, ok := metadata["signature"]
+	if !ok {
+		return fmt.Errorf("signature is missing")
+	}
+
+	hash, ok := metadata["hash"]
+	if !ok {
+		return fmt.Errorf("hash is missing")
+	}
+
+	err = u.DBClient.CreateJob(ctx, cid.String(), fname, timestamp, cacheDutation, sign, hash)
 	if err != nil {
 		return fmt.Errorf("failed to create deal: %v", err)
 	}

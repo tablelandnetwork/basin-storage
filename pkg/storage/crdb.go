@@ -16,7 +16,16 @@ import (
 	"github.com/cockroachdb/cockroach-go/crdb"
 )
 
-func createJobTx(tx *sql.Tx, cidBytes []byte, pub Pub, timestamp *int64, fname string, cacheDuration int64) error {
+func createJobTx(
+	tx *sql.Tx,
+	cidBytes []byte,
+	pub Pub,
+	timestamp *int64,
+	fname string,
+	cacheDuration int64,
+	sign string,
+	hash string,
+) error {
 	row := tx.QueryRow(
 		"SELECT id FROM namespaces WHERE name = $1", pub.Namespace)
 	var nsID int
@@ -31,8 +40,8 @@ func createJobTx(tx *sql.Tx, cidBytes []byte, pub Pub, timestamp *int64, fname s
 	}
 
 	_, err := tx.Exec(
-		"insert into jobs (ns_id, cid, relation, timestamp, cache_path, expires_at) values($1, $2, $3, $4, $5, $6)",
-		nsID, cidBytes, pub.Relation, timestamp, cachePath, expiresAt)
+		"insert into jobs (ns_id, cid, relation, timestamp, cache_path, expires_at, sign, hash) values($1, $2, $3, $4, $5, $6, $7, $8)",
+		nsID, cidBytes, pub.Relation, timestamp, sign, hash)
 	if err != nil {
 		return errors.Wrap(err, "updating record")
 	}
@@ -42,7 +51,7 @@ func createJobTx(tx *sql.Tx, cidBytes []byte, pub Pub, timestamp *int64, fname s
 
 // Crdb is an interface that defines the methods to interact with CockroachDB.
 type Crdb interface {
-	CreateJob(ctx context.Context, cidStr string, fileName string, timestamp *int64, cacheDuration int64) error
+	CreateJob(ctx context.Context, cidStr string, fileName string, timestamp *int64, cacheDuration int64, sign, hash string) error
 	UnfinishedJobs(ctx context.Context) ([]UnfinishedJob, error)
 	UpdateJobStatus(ctx context.Context, cid []byte, activation time.Time) error
 }
@@ -88,7 +97,13 @@ func extractPub(filename string) (Pub, error) {
 
 // CreateJob creates a new job in the DB.
 func (db *DBClient) CreateJob(
-	ctx context.Context, cidStr string, fname string, timestamp *int64, cacheDuration int64,
+	ctx context.Context,
+	cidStr string,
+	fname string,
+	timestamp *int64,
+	cacheDuration int64,
+	sign string,
+	hash string,
 ) error {
 	cid, err := cid.Decode(cidStr)
 	if err != nil {
@@ -107,7 +122,7 @@ func (db *DBClient) CreateJob(
 	}
 
 	err = crdb.ExecuteTx(ctx, db.DB, txopts, func(tx *sql.Tx) error {
-		return createJobTx(tx, cid.Bytes(), pub, timestamp, fname, cacheDuration)
+		return createJobTx(tx, cid.Bytes(), pub, timestamp, fname, cacheDuration, sign, hash)
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create new job: %v", err)
